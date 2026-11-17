@@ -532,6 +532,48 @@ async def fallback(message: Message) -> None:
     await message.answer("Please choose an option below 👇", reply_markup=main_menu())
 
 
+# ----------------------------------------------------- hosting helpers (Render)
+async def start_health_server() -> Optional[Any]:
+    """Tiny HTTP endpoint so web-service hosts (Render) see an open $PORT.
+
+    Only started when the PORT env var is set; a no-op locally.
+    """
+    port = os.getenv("PORT")
+    if not port:
+        return None
+    from aiohttp import web  # installed together with aiogram
+
+    async def health(_: web.Request) -> web.Response:
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    await web.TCPSite(runner, "0.0.0.0", int(port)).start()
+    log.info("Health server listening on :%s", port)
+    return runner
+
+
+async def keepalive_loop() -> None:
+    """Ping our own public URL so free hosts don't put the service to sleep."""
+    url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url:
+        return
+    import aiohttp
+
+    await asyncio.sleep(60)
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                async with session.get(url + "/health", timeout=aiohttp.ClientTimeout(total=15)):
+                    pass
+            except Exception as exc:  # network hiccup: just try again later
+                log.warning("keepalive ping failed: %s", exc)
+            await asyncio.sleep(600)
+
+
 # ---------------------------------------------------------------------- main
 async def main() -> None:
     global db
@@ -551,9 +593,14 @@ async def main() -> None:
     me = await bot.me()
     log.info("Starting @%s", me.username)
     await bot.delete_webhook(drop_pending_updates=False)
+    web_runner = await start_health_server()
+    keepalive = asyncio.create_task(keepalive_loop())
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
+        keepalive.cancel()
+        if web_runner is not None:
+            await web_runner.cleanup()
         await bot.session.close()
         db.close()
 
