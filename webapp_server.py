@@ -17,7 +17,7 @@ from aiogram.types import LabeledPrice
 from countries import COUNTRIES
 from tg_auth import validate_init_data
 from regions import is_valid
-from webapp_logic import board_payload, me_payload, regions_map
+from webapp_logic import board_payload, me_payload, pulse_payload, regions_map
 
 log = logging.getLogger("worldrichlist.web")
 
@@ -105,6 +105,10 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
         )
         return web.json_response(data)
 
+    async def pulse(request: web.Request) -> web.Response:
+        user = await authenticate(request)
+        return web.json_response(await asyncio.to_thread(pulse_payload, db, user["id"]))
+
     async def set_region(request: web.Request) -> web.Response:
         user = await authenticate(request)
         body = await request.json()
@@ -162,6 +166,7 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
     app.router.add_get("/api/bootstrap", bootstrap)
     app.router.add_get("/api/board", board)
     app.router.add_post("/api/country", set_country)
+    app.router.add_get("/api/pulse", pulse)
     app.router.add_post("/api/region", set_region)
     app.router.add_post("/api/anon", toggle_anon)
     app.router.add_post("/api/invoice", invoice)

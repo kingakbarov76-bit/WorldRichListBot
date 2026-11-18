@@ -347,6 +347,48 @@ class Database:
                 )
         return out
 
+    # ------------------------------------------------ weekly battle & feed
+    def battle(self) -> dict[str, Any]:
+        """Calendar-week (Mon 00:00 UTC) country race: this week's top 3,
+        last week's winner and seconds until reset."""
+        def top(col: str, lo: str, hi: str) -> list[dict[str, Any]]:
+            return self._all(
+                f"""
+                SELECT {col} AS place, SUM(amount)::bigint AS value,
+                       COUNT(DISTINCT user_id)::bigint AS members
+                FROM {S}.payments
+                WHERE {col} IS NOT NULL
+                  AND ts >= {lo} AND ts < {hi}
+                GROUP BY {col}
+                ORDER BY value DESC, MAX(ts) ASC, {col} ASC
+                LIMIT 3
+                """
+            )
+        wk = "date_trunc('week', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'"
+        now_hi = "now() + interval '1 day'"
+        last_lo = f"({wk} - interval '7 days')"
+        reset = self._one(
+            f"SELECT EXTRACT(EPOCH FROM (({wk} + interval '7 days') - now()))::bigint AS s"
+        )
+        return {
+            "now": top("country_code", wk, now_hi),
+            "last": top("country_code", last_lo, wk),
+            "last_regions": top("region_code", last_lo, wk),
+            "resets_in": int(reset["s"]) if reset else 0,
+        }
+
+    def feed(self, limit: int) -> list[dict[str, Any]]:
+        return self._all(
+            f"""
+            SELECT p.user_id, p.amount, p.country_code, p.region_code,
+                   EXTRACT(EPOCH FROM (now() - p.ts))::bigint AS ago,
+                   u.is_anonymous, u.username, u.full_name
+            FROM {S}.payments p JOIN {S}.users u ON u.user_id = p.user_id
+            ORDER BY p.ts DESC LIMIT %s
+            """,
+            (limit,),
+        )
+
     # ------------------------------------------------------------------ stats
     def user_stats(self, user_id: int) -> dict[str, Any]:
         _, all_me = self.leaderboard_users("all", 0, user_id)

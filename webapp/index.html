@@ -32,7 +32,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .num{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
 
 /* ---------- layout ---------- */
-#app{min-height:100vh;padding:0 16px calc(168px + var(--safe-b))}
+#app{min-height:100vh;padding:0 16px calc(110px + var(--safe-b));background:radial-gradient(120% 40% at 50% -6%,rgba(255,197,61,.13),transparent 60%)}
 header{padding:18px 0 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 h1{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2}
 .sub{color:var(--mist);font-size:13px;margin-top:4px;max-width:24ch}
@@ -56,7 +56,7 @@ h1{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2}
 .bar{width:100%;border-radius:12px 12px 4px 4px;background:var(--panel2);display:flex;align-items:flex-start;justify-content:center;
   padding-top:10px;transform-origin:bottom}
 .bar .num{font-size:26px;color:var(--mist)}
-.pod.first .bar{background:var(--gold)}
+.pod.first .bar{background:linear-gradient(180deg,#FFD870,var(--gold));box-shadow:0 0 36px rgba(255,197,61,.35)}
 .pod.first .bar .num{color:var(--ink);font-size:34px}
 .pod.mine .who{color:var(--you)}
 .pod.open .flag-slot{width:54px;height:36px;border:2px dashed var(--line);border-radius:6px}
@@ -121,14 +121,14 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
   display:grid;place-items:center;font-family:var(--display);font-size:12px;color:var(--gold)}
 
 /* ---------- bottom bars ---------- */
-.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--ink) 72%,rgba(18,22,58,0));padding:22px 16px calc(8px + var(--safe-b));z-index:5}
+.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--ink) 55%,rgba(18,22,58,0));padding:26px 14px calc(8px + var(--safe-b));z-index:5}
 .donate{width:100%;min-height:54px;border-radius:16px;background:var(--gold);color:var(--ink);font-weight:700;font-size:16px;
   display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
 .donate .flag{width:26px;height:17px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel);border-radius:16px;padding:4px}
-.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border-radius:12px;color:var(--mist);font-size:12px;font-weight:600;min-height:52px}
-.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.tabs button[aria-selected="true"]{color:var(--gold);background:var(--panel2)}
+.tabs{display:grid;grid-template-columns:1fr 1fr 78px 1fr;align-items:end;background:rgba(27,32,82,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:22px;padding:5px 6px;box-shadow:0 10px 30px rgba(4,6,24,.55)}
+.tabs button:not(.fab){display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border-radius:14px;color:var(--mist);font-size:12px;font-weight:600;min-height:52px}
+.tabs button:not(.fab) svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button:not(.fab)[aria-selected="true"]{color:var(--gold);background:rgba(37,43,107,.9)}
 
 /* ---------- sheet ---------- */
 .backdrop{position:fixed;inset:0;background:rgba(6,8,28,.65);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
@@ -182,15 +182,46 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .ranks td+td{padding-left:6px}
 .pin{display:inline-grid;place-items:center;width:30px;height:20px;font-size:15px}
 .loc{display:flex;align-items:center;gap:8px}
+
+.fab{position:relative;top:-18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding-top:2px;width:64px;height:64px;margin:0 auto;border-radius:50%;
+  background:linear-gradient(160deg,#FFD870,var(--gold) 55%,#F0A91E);color:var(--ink);box-shadow:0 8px 22px rgba(255,197,61,.45),0 0 0 5px var(--ink)}
+.fab span{font-size:22px;line-height:1;margin-bottom:1px}.fab em{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.01em}
+.fab:active{transform:scale(.95)}
+.row.mine{background:linear-gradient(90deg,rgba(98,224,180,.12),transparent);border-radius:12px;margin:0 -8px;padding-left:8px;padding-right:8px}
+.battle{background:linear-gradient(135deg,#2A2F7E,#1B2052 70%);border:1px solid var(--line);border-radius:20px;padding:14px 14px 12px;margin-bottom:16px}
+.battle .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.battle h2{margin:0;font-size:15px}
+.timer{font-size:12px;font-weight:700;color:var(--ink);background:var(--gold);border-radius:999px;padding:4px 10px}
+.battle .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.battle .mini>div{background:rgba(18,22,58,.6);border-radius:12px;padding:10px 6px;text-align:center;min-width:0}
+.battle .mini .n{font-size:12px;font-weight:700;margin-top:4px;line-height:1.25;min-height:30px}
+.battle .mini .v{font-size:11.5px;color:var(--gold);font-weight:700}
+.battle .last{margin-top:10px;font-size:12.5px;color:var(--mist)}
+.battle .last b{color:var(--chalk)}
+.challenge{margin-top:8px;width:100%;min-height:42px;border-radius:12px;background:rgba(255,197,61,.14);color:var(--gold);font-weight:700;font-size:13.5px}
+.live{margin-top:22px}
+.live h2{display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--you);box-shadow:0 0 0 0 rgba(98,224,180,.6);animation:pulse 1.8s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(98,224,180,0)}100%{box-shadow:0 0 0 0 rgba(98,224,180,0)}}
+.ev{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.ev:first-of-type{border-top:0}.ev .t{color:var(--mist);font-size:12px;margin-left:auto;white-space:nowrap}
+.ev b{color:var(--gold)}
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.badge{background:var(--ink);border-radius:14px;padding:12px 6px 10px;text-align:center}
+.badge i{display:block;font-style:normal;font-size:26px;line-height:1.1}
+.badge span{display:block;font-size:11.5px;font-weight:700;margin-top:4px}
+.badge small{display:block;font-size:10.5px;color:var(--mist);margin-top:1px}
+.badge.off{opacity:.38;filter:grayscale(1)}
+.badge.on{box-shadow:inset 0 0 0 1.5px rgba(255,197,61,.55)}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div class="dock" id="dock" hidden>
-  <button class="donate" id="donateBtn" data-act="open-donate"></button>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" data-tab="p" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>Places</button>
     <button role="tab" data-tab="pe" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3 3 0 010 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg>People</button>
+    <button class="fab" id="donateBtn" data-act="open-donate" aria-label="Donate Stars"><span>⭐</span><em>Donate</em></button>
     <button role="tab" data-tab="me" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-3.6 3.5-5.6 7.5-5.6s6.9 2 7.5 5.6"/></svg>Me</button>
   </nav>
 </div>
@@ -209,7 +240,7 @@ const POPULAR = ["UZ","KZ","KG","TJ","TM","RU","TR","UA","AZ","US","IN","BR"];
 const S = {
   me: null, cfg: null, countries: [], byCode: {}, regions: {}, regName: {},
   tab: "p", metric: "stars", period: "all", level: "countries", scope: "world",
-  board: null, loading: false, entered: false, regionAsked: false,
+  board: null, pulse: null, loading: false, entered: false, regionAsked: false,
   sheet: { open: false, step: "amount", after: "amount", amount: 50, custom: "", search: "", busy: false, error: "", paid: 0 },
 };
 
@@ -273,8 +304,10 @@ function boardQuery() {
 }
 async function loadBoard() {
   S.loading = true; render();
-  try { S.board = await api(`/api/board?${boardQuery()}`); }
-  catch (e) { toast(e.message); }
+  try {
+    const [b, p] = await Promise.all([api(`/api/board?${boardQuery()}`), S.tab === "p" ? api("/api/pulse").catch(() => null) : Promise.resolve(S.pulse)]);
+    S.board = b; if (p) S.pulse = p;
+  } catch (e) { toast(e.message); }
   S.loading = false; render();
 }
 async function refreshAll() {
@@ -309,6 +342,58 @@ const shareText = () => S.me.region
   : (S.me.country ? `Help ${cname(S.me.country)} reach #1 on the Country Ranking! ⭐` : "Which country is the richest in Telegram Stars?");
 const SKEL = `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
 
+
+/* ---------------- battle, feed, badges, challenge ---------------- */
+const placeLabel = (k) => (okCode(k) ? cname(k) : rname(k));
+const placeFlag = (k) => flag(okCode(k) ? k : (k || "").split("-")[0]);
+function left(sec) {
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${Math.max(1, m)}m`;
+}
+function ago(sec) {
+  if (sec < 90) return "now"; if (sec < 3600) return `${Math.round(sec / 60)}m`;
+  if (sec < 86400) return `${Math.round(sec / 3600)}h`; return `${Math.round(sec / 86400)}d`;
+}
+function battleHTML() {
+  const p = S.pulse; if (!p) return "";
+  const b = p.battle, slots = [0, 1, 2].map((i) => b.now[i]);
+  const cell = (r, i) => r
+    ? `<div>${placeFlag(r.key)}<div class="n">${["🥇","🥈","🥉"][i]} ${esc(placeLabel(r.key))}</div><div class="v">${fmt(r.value)} ⭐</div></div>`
+    : `<div><div class="flag-slot" style="width:30px;height:20px;border:2px dashed var(--line);border-radius:4px;margin:0 auto"></div><div class="n" style="color:var(--mist)">Open</div><div class="v">&nbsp;</div></div>`;
+  const last = b.last[0]
+    ? `Last week's winner: <b>${placeFlag(b.last[0].key)} ${esc(placeLabel(b.last[0].key))}</b>${b.last_regions[0] ? ` · region <b>${esc(rname(b.last_regions[0].key))}</b>` : ""}`
+    : "Last week: no winner yet. Be the first.";
+  return `<div class="battle"><div class="top"><h2>⚔️ Weekly battle</h2><span class="timer">ends in ${left(b.resets_in)}</span></div>
+    <div class="mini">${slots.map(cell).join("")}</div><div class="last">${last}</div></div>`;
+}
+function feedHTML() {
+  const p = S.pulse; if (!p || !p.feed.length) return "";
+  return `<div class="live"><h2><span class="dot"></span>Live</h2>${p.feed.map((e) => {
+    const where = e.region ? rname(e.region) : (e.code ? cname(e.code) : "");
+    return `<div class="ev">${e.code ? flag(e.code) : ""}<div><b>${esc(e.name)}${e.is_me ? " (you)" : ""}</b> sent ${fmt(e.amount)} ⭐${where ? ` for ${esc(where)}` : ""}</div><span class="t">${ago(e.ago)}</span></div>`;
+  }).join("")}</div>`;
+}
+function badgesHTML() {
+  const m = S.me, rk = m.ranks || {}, top = (r, n) => !!(r && r.pos <= n);
+  const list = [
+    ["⭐", "First Star", "Donate once", m.total > 0],
+    ["🏅", "Founding Donor", "One of the first 50", !!(m.donor_no && m.donor_no <= 50)],
+    ["📍", "Region #1", "Lead your region", top(rk.stars_region, 1) || top(rk.friends_region, 1)],
+    ["🚩", "Country #1", "Lead your country", top(rk.stars_country, 1) || top(rk.friends_country, 1)],
+    ["🌍", "World top 10", "Reach the world top", top(rk.stars_world, 10) || top(rk.friends_world, 10)],
+    ["🤝", "Connector", "Invite 3 friends", m.invited >= 3],
+    ["🐋", "Big Fish", "Donate 500 ⭐", m.total >= 500],
+    ["🔥", "Rally", "Invite 10 friends", m.invited >= 10],
+    ["🕶", "Low profile", "Hide your name", !!m.anon],
+  ];
+  const got = list.filter((b) => b[3]).length;
+  return `<div class="card"><h2>Badges · ${got}/${list.length}</h2><p>Earned from real activity. No donation needed for most of them.</p>
+    <div class="badges">${list.map(([i, n, d, on]) => `<div class="badge ${on ? "on" : "off"}"><i>${i}</i><span>${n}</span><small>${d}</small></div>`).join("")}</div></div>`;
+}
+function challengeText(rival, gap, myName) {
+  return `${myName} is only ${fmt(gap)} ${S.metric === "stars" ? "⭐" : "friends"} behind ${rival} on the World Rich List! Join the race, it's free to look and pick a side.`;
+}
+
 /* ---------------- Places tab ---------------- */
 function placesHTML() {
   const b = S.board;
@@ -336,9 +421,12 @@ function placesHTML() {
       const above = items[mine.pos - 2];
       line = above ? `${fmt(above.value - mine.value + 1)} ${S.metric === "stars" ? "⭐ more" : "more friends"} to pass ${esc(above.name)}` : "Keep going to climb.";
     }
-    strip = `<div class="strip">${flag(cc)}<div><div class="t">${esc(nm)} · ${mine ? `#${mine.pos} · ${val(mine.value)}` : "Not ranked yet"}</div><div class="d">${line}</div></div></div>`;
+    const above2 = mine && mine.pos > 1 ? items[mine.pos - 2] : null;
+    const ch = above2 ? `<button class="challenge" data-act="challenge" data-text="${esc(challengeText(above2.name, above2.value - mine.value + 1, nm))}">⚔️ Challenge friends to pass ${esc(above2.name)}</button>` : `<button class="challenge" data-act="challenge" data-text="${esc(`${nm} leads the World Rich List! Come and join the race.`)}">📣 Share ${esc(nm)}'s lead</button>`;
+    strip = `<div class="strip" style="flex-wrap:wrap">${flag(cc)}<div><div class="t">${esc(nm)} · ${mine ? `#${mine.pos} · ${val(mine.value)}` : "Not ranked yet"}</div><div class="d">${line}</div></div>${ch}</div>`;
+    if (!mine) strip = strip.replace(/<button class="challenge"[\s\S]*?<\/button>/, `<button class="challenge" data-act="challenge" data-text="${esc(`Help ${nm} get on the World Rich List!`)}">📣 Invite friends for ${esc(nm)}</button>`);
   }
-  let html = podiumHTML(items) + strip;
+  let html = (b.scope === "countries" && S.period === "all" ? battleHTML() : "") + podiumHTML(items) + strip;
   const sample = !regions && S.metric === "stars" && S.period === "all" && S.cfg.sample.show && lead < S.cfg.sample.stars
     ? `<div class="row sample"><div class="pos">🎯</div><div class="avatar" style="background:var(--panel2)">🤖</div><div><div class="name">Demo country<span class="tag">sample</span></div><div class="meta">Not a real country. Beat it to take #1.</div></div><div class="stars">${fmt(S.cfg.sample.stars)} ⭐</div></div>` : "";
   if (!items.length) {
@@ -350,7 +438,7 @@ function placesHTML() {
     }).join("")}</div>`;
     if (items.length <= 3) html += `<div class="empty"><b>The race is just starting</b>Take a spot on the podium.</div>`;
   }
-  return html;
+  return html + (b.scope === "countries" ? feedHTML() : "");
 }
 
 /* ---------------- People tab ---------------- */
@@ -426,6 +514,7 @@ function meHTML() {
     <p>Not in the world top? Look at your country and region. Tap a rank to see the list.</p>
     ${matrix}
   </div>
+  ${badgesHTML()}
   <div class="card">
     <h2>Invite friends</h2>
     <p>${m.invited ? `${m.invited} friend${m.invited === 1 ? "" : "s"} joined with your link. A friend counts once they pick a country.` : "Bring friends from your country. A friend counts once they pick a country."}</p>
@@ -472,7 +561,6 @@ function render() {
   if (S.tab === "p" && S.board && S.board.kind === "places") S.entered = true;
   document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
   const c = S.me.country;
-  $("#donateBtn").innerHTML = c ? `<span>Donate for</span>${flag(c)}<span>${esc(S.me.region ? rname(S.me.region) : cname(c))}</span>` : "⭐ Donate Stars";
   renderSheet();
 }
 
@@ -592,6 +680,9 @@ document.addEventListener("click", async (e) => {
       catch (err) { toast(err.message); }
       break;
     case "pay": pay(); break;
+    case "challenge": {
+      const url = `https://t.me/share/url?url=${encodeURIComponent(S.me.link)}&text=${encodeURIComponent(t.dataset.text || "")}`;
+      tg && tg.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, "_blank"); break; }
     case "share": {
       const url = `https://t.me/share/url?url=${encodeURIComponent(S.me.link)}&text=${encodeURIComponent(shareText())}`;
       tg && tg.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, "_blank"); break; }
@@ -621,6 +712,7 @@ function demoApi(path, opts) {
   if (path.startsWith("/api/bootstrap")) return Promise.resolve({ me: me(), countries: Object.entries(names).map(([code, name]) => ({ code, name })), regions: Object.fromEntries(Object.entries(regs).map(([c, l]) => [c, l.map(([key, name]) => ({ key, name }))])), config: { presets: [10, 50, 100, 500, 1000], min: 1, max: 10000, sample: { show: false, stars: 100 } } });
   if (path.startsWith("/api/country")) { DEMO_STATE.country = JSON.parse(opts.body ? JSON.stringify(opts.body) : "{}").code; DEMO_STATE.region = null; return Promise.resolve({ me: me() }); }
   if (path.startsWith("/api/region")) { DEMO_STATE.region = opts.body.key; return Promise.resolve({ me: me() }); }
+  if (path.startsWith("/api/pulse")) return Promise.resolve({ battle: { resets_in: 301000, now: [{ key: "KZ", value: 320, members: 5 }, { key: "UZ", value: 280, members: 4 }, { key: "TR", value: 90, members: 2 }], last: [{ key: "UZ", value: 900, members: 11 }], last_regions: [{ key: "UZ-SAMARKAND", value: 400, members: 4 }] }, feed: [{ name: "@aziz", amount: 50, code: "UZ", region: "UZ-TASHKENT-CITY", ago: 120 }, { name: "Anonymous", amount: 100, code: "KZ", region: null, ago: 1900 }, { name: "Demo User", is_me: true, amount: 10, code: "UZ", region: "UZ-SAMARKAND", ago: 9000 }] });
   if (path.startsWith("/api/board")) {
     const q = new URLSearchParams(path.split("?")[1]), f = q.get("metric") === "friends" ? 0.05 : 1;
     const v = (n) => Math.max(1, Math.round(n * f));

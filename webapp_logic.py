@@ -111,3 +111,28 @@ def board_payload(
             if mine else None
         ),
     }
+
+
+def pulse_payload(db: Any, user_id: int) -> dict[str, Any]:
+    """Weekly battle + live feed. Real events only; anonymous names masked."""
+    b = db.battle()
+    pick = lambda rows: [{"key": r["place"], "value": int(r["value"]), "members": int(r["members"])} for r in rows]
+    feed = []
+    for r in db.feed(15):
+        me = r["user_id"] == user_id
+        anon = bool(r.get("is_anonymous")) and not me
+        feed.append({
+            "name": "Anonymous" if anon else _display(r),
+            "is_me": me,
+            "amount": int(r["amount"]),
+            "code": r.get("country_code"),
+            "region": r.get("region_code"),
+            "ago": int(r["ago"]),
+        })
+    return {
+        "battle": {
+            "now": pick(b["now"]), "last": pick(b["last"]),
+            "last_regions": pick(b["last_regions"]), "resets_in": b["resets_in"],
+        },
+        "feed": feed,
+    }
