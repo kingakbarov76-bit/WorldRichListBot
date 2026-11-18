@@ -1,203 +1,205 @@
-"""SQLite storage for WorldRichListBot (stdlib only, thread-safe)."""
+"""Postgres (Supabase) storage for WorldRichListBot.
+
+Sync psycopg3 + connection pool; the bot calls these methods through
+asyncio.to_thread. Use the Supabase *Session pooler* connection string
+(IPv4-compatible) as DATABASE_URL.
+"""
 from __future__ import annotations
 
-import sqlite3
-import threading
-import time
 from typing import Any, Optional
 
-WEEK_SECONDS = 7 * 24 * 3600
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
-_ALL_TIME_CTE = """
-WITH r AS (
-    SELECT user_id, username, full_name, is_anonymous,
-           total_stars AS stars,
-           ROW_NUMBER() OVER (
-               ORDER BY total_stars DESC, updated_at ASC, user_id ASC
-           ) AS pos
-    FROM users
-    WHERE total_stars > 0
-)
-"""
-
-_WEEKLY_CTE = """
-WITH s AS (
-    SELECT user_id, SUM(amount) AS stars, MAX(ts) AS last_ts
-    FROM payments
-    WHERE ts >= :since
-    GROUP BY user_id
-),
-r AS (
-    SELECT u.user_id, u.username, u.full_name, u.is_anonymous,
-           s.stars AS stars,
-           ROW_NUMBER() OVER (
-               ORDER BY s.stars DESC, s.last_ts ASC, s.user_id ASC
-           ) AS pos
-    FROM s JOIN users u ON u.user_id = s.user_id
-)
-"""
+from sql_queries import S, country_cte, country_donors_cte, user_cte
 
 
 class Database:
-    def __init__(self, path: str = "worldrichlist.db") -> None:
-        self._lock = threading.Lock()
-        self._conn = sqlite3.connect(
-            path, check_same_thread=False, isolation_level=None
+    def __init__(self, dsn: str) -> None:
+        self.pool = ConnectionPool(
+            dsn,
+            min_size=1,
+            max_size=5,
+            kwargs={
+                "row_factory": dict_row,
+                "prepare_threshold": None,  # safe behind poolers
+                "connect_timeout": 15,
+            },
+            open=False,
         )
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
-        self._init_schema()
+        self.pool.open(wait=True, timeout=30)
 
-    # ------------------------------------------------------------------ schema
-    def _init_schema(self) -> None:
-        with self._lock:
-            self._conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id      INTEGER PRIMARY KEY,
-                    username     TEXT,
-                    full_name    TEXT NOT NULL DEFAULT '',
-                    total_stars  INTEGER NOT NULL DEFAULT 0,
-                    is_anonymous INTEGER NOT NULL DEFAULT 0,
-                    donor_no     INTEGER,
-                    referrer_id  INTEGER,
-                    created_at   REAL NOT NULL,
-                    updated_at   REAL NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS payments (
-                    charge_id TEXT PRIMARY KEY,
-                    user_id   INTEGER NOT NULL,
-                    amount    INTEGER NOT NULL,
-                    ts        REAL NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_payments_ts ON payments(ts);
-                CREATE INDEX IF NOT EXISTS idx_users_total ON users(total_stars);
-                CREATE INDEX IF NOT EXISTS idx_users_referrer ON users(referrer_id);
-                """
-            )
+    # ------------------------------------------------------------ low level
+    def _one(self, sql: str, params: tuple = ()) -> Optional[dict[str, Any]]:
+        with self.pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            return cur.fetchone()
 
-    # ------------------------------------------------------------------- users
+    def _all(self, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
+        with self.pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            return cur.fetchall()
+
+    def _exec(self, sql: str, params: tuple = ()) -> int:
+        with self.pool.connection() as conn:
+            return conn.execute(sql, params).rowcount
+
+    # ---------------------------------------------------------------- users
     def upsert_user(
         self, user_id: int, username: Optional[str], full_name: str
     ) -> bool:
-        """Create or refresh a user. Returns True if the user is new."""
-        now = time.time()
-        with self._lock:
-            cur = self._conn.execute(
-                "INSERT OR IGNORE INTO users"
-                "(user_id, username, full_name, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (user_id, username, full_name or "", now, now),
-            )
-            if cur.rowcount == 1:
-                return True
-            # Refresh the name only; updated_at is the leaderboard tie-break
-            # (time of last donation) and must not change here.
-            self._conn.execute(
-                "UPDATE users SET username = ?, full_name = ? WHERE user_id = ?",
-                (username, full_name or "", user_id),
-            )
-            return False
+        """Create/refresh a user. Returns True if the user is new."""
+        row = self._one(
+            f"""
+            INSERT INTO {S}.users (user_id, username, full_name)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_id) DO UPDATE
+               SET username = EXCLUDED.username, full_name = EXCLUDED.full_name
+            RETURNING (xmax = 0) AS inserted
+            """,
+            (user_id, username, full_name or ""),
+        )
+        return bool(row and row["inserted"])
 
     def user_exists(self, user_id: int) -> bool:
-        with self._lock:
-            row = self._conn.execute(
-                "SELECT 1 FROM users WHERE user_id = ?", (user_id,)
-            ).fetchone()
-        return row is not None
+        return self._one(
+            f"SELECT 1 AS x FROM {S}.users WHERE user_id = %s", (user_id,)
+        ) is not None
 
     def set_referrer(self, user_id: int, referrer_id: int) -> bool:
         if user_id == referrer_id:
             return False
-        with self._lock:
-            ref = self._conn.execute(
-                "SELECT 1 FROM users WHERE user_id = ?", (referrer_id,)
-            ).fetchone()
-            if ref is None:
-                return False
-            cur = self._conn.execute(
-                "UPDATE users SET referrer_id = ? "
-                "WHERE user_id = ? AND referrer_id IS NULL",
-                (referrer_id, user_id),
+        return (
+            self._exec(
+                f"""
+                UPDATE {S}.users SET referrer_id = %s
+                WHERE user_id = %s AND referrer_id IS NULL
+                  AND EXISTS (SELECT 1 FROM {S}.users WHERE user_id = %s)
+                """,
+                (referrer_id, user_id, referrer_id),
             )
-            return cur.rowcount == 1
+            == 1
+        )
 
     def toggle_anonymous(self, user_id: int) -> bool:
-        """Flip anonymous mode, return the new value."""
-        with self._lock:
-            self._conn.execute(
-                "UPDATE users SET is_anonymous = 1 - is_anonymous WHERE user_id = ?",
-                (user_id,),
-            )
-            row = self._conn.execute(
-                "SELECT is_anonymous FROM users WHERE user_id = ?", (user_id,)
-            ).fetchone()
+        row = self._one(
+            f"UPDATE {S}.users SET is_anonymous = NOT is_anonymous "
+            f"WHERE user_id = %s RETURNING is_anonymous",
+            (user_id,),
+        )
         return bool(row["is_anonymous"]) if row else False
 
     def is_anonymous(self, user_id: int) -> bool:
-        with self._lock:
-            row = self._conn.execute(
-                "SELECT is_anonymous FROM users WHERE user_id = ?", (user_id,)
-            ).fetchone()
+        row = self._one(
+            f"SELECT is_anonymous FROM {S}.users WHERE user_id = %s", (user_id,)
+        )
         return bool(row["is_anonymous"]) if row else False
 
-    # ---------------------------------------------------------------- payments
-    def _pos_all_time(self, user_id: int) -> Optional[int]:
-        row = self._conn.execute(
-            _ALL_TIME_CTE + "SELECT pos FROM r WHERE user_id = ?", (user_id,)
-        ).fetchone()
+    # -------------------------------------------------------------- country
+    def get_country(self, user_id: int) -> Optional[str]:
+        row = self._one(
+            f"SELECT country_code FROM {S}.users WHERE user_id = %s", (user_id,)
+        )
+        return row["country_code"] if row and row["country_code"] else None
+
+    def has_donated(self, user_id: int) -> bool:
+        row = self._one(
+            f"SELECT total_stars FROM {S}.users WHERE user_id = %s", (user_id,)
+        )
+        return bool(row and row["total_stars"] > 0)
+
+    def set_country(self, user_id: int, code: str) -> bool:
+        """Choose a country. Locked after the first donation."""
+        return (
+            self._exec(
+                f"""
+                UPDATE {S}.users SET country_code = %s
+                WHERE user_id = %s AND (total_stars = 0 OR country_code IS NULL)
+                """,
+                (code.upper(), user_id),
+            )
+            == 1
+        )
+
+    # ------------------------------------------------------------- payments
+    def _user_pos(self, cur: Any, user_id: int) -> Optional[int]:
+        cur.execute(user_cte("all") + "SELECT pos FROM r WHERE user_id = %s", (user_id,))
+        row = cur.fetchone()
+        return int(row["pos"]) if row else None
+
+    def _country_pos(self, cur: Any, code: str) -> Optional[int]:
+        cur.execute(
+            country_cte("all") + "SELECT pos FROM r WHERE country_code = %s", (code,)
+        )
+        row = cur.fetchone()
         return int(row["pos"]) if row else None
 
     def record_payment(
         self, user_id: int, amount: int, charge_id: str
     ) -> Optional[dict[str, Any]]:
-        """Credit a successful payment exactly once.
-
-        Returns None if this charge_id was already processed (duplicate),
-        otherwise a dict with old/new rank and totals.
-        """
-        now = time.time()
-        with self._lock:
-            c = self._conn
-            c.execute("BEGIN IMMEDIATE")
-            try:
-                c.execute(
-                    "INSERT OR IGNORE INTO users"
-                    "(user_id, full_name, created_at, updated_at) "
-                    "VALUES (?, '', ?, ?)",
-                    (user_id, now, now),
+        """Credit a successful payment exactly once (None = duplicate)."""
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"INSERT INTO {S}.users (user_id) VALUES (%s) "
+                    f"ON CONFLICT (user_id) DO NOTHING",
+                    (user_id,),
                 )
-                cur = c.execute(
-                    "INSERT OR IGNORE INTO payments(charge_id, user_id, amount, ts) "
-                    "VALUES (?, ?, ?, ?)",
-                    (charge_id, user_id, amount, now),
+                # Row lock serialises concurrent payments of the same user.
+                cur.execute(
+                    f"SELECT total_stars, donor_no, country_code FROM {S}.users "
+                    f"WHERE user_id = %s FOR UPDATE",
+                    (user_id,),
                 )
-                if cur.rowcount == 0:
-                    c.execute("COMMIT")
+                u = cur.fetchone()
+                cur.execute(
+                    f"SELECT 1 AS x FROM {S}.payments WHERE charge_id = %s",
+                    (charge_id,),
+                )
+                if cur.fetchone():
                     return None
 
-                old_pos = self._pos_all_time(user_id)
-                row = c.execute(
-                    "SELECT total_stars, donor_no FROM users WHERE user_id = ?",
-                    (user_id,),
-                ).fetchone()
-                old_total = int(row["total_stars"])
-                donor_no = row["donor_no"]
-                if donor_no is None:
-                    donor_no = c.execute(
-                        "SELECT COALESCE(MAX(donor_no), 0) + 1 FROM users"
-                    ).fetchone()[0]
-                c.execute(
-                    "UPDATE users SET total_stars = total_stars + ?, "
-                    "donor_no = ?, updated_at = ? WHERE user_id = ?",
-                    (amount, donor_no, now, user_id),
+                country = u["country_code"]
+                old_total = int(u["total_stars"])
+                old_pos = self._user_pos(cur, user_id)
+                old_cpos = self._country_pos(cur, country) if country else None
+
+                cur.execute(
+                    f"INSERT INTO {S}.payments (charge_id, user_id, amount, country_code) "
+                    f"VALUES (%s, %s, %s, %s) ON CONFLICT (charge_id) DO NOTHING",
+                    (charge_id, user_id, amount, country),
                 )
-                new_pos = self._pos_all_time(user_id)
-                c.execute("COMMIT")
-            except BaseException:
-                c.execute("ROLLBACK")
-                raise
+                if cur.rowcount == 0:
+                    return None
+
+                donor_no = u["donor_no"]
+                if donor_no is None:
+                    cur.execute("SELECT nextval('worldrichlist.donor_seq') AS n")
+                    donor_no = int(cur.fetchone()["n"])
+                cur.execute(
+                    f"UPDATE {S}.users SET total_stars = total_stars + %s, "
+                    f"donor_no = %s, updated_at = now() WHERE user_id = %s",
+                    (amount, donor_no, user_id),
+                )
+
+                new_pos = self._user_pos(cur, user_id)
+                new_cpos = self._country_pos(cur, country) if country else None
+
+                passed: list[str] = []
+                if (
+                    country
+                    and old_cpos is not None
+                    and new_cpos is not None
+                    and new_cpos < old_cpos
+                ):
+                    cur.execute(
+                        country_cte("all")
+                        + "SELECT country_code FROM r WHERE pos > %s AND pos <= %s "
+                        "ORDER BY pos",
+                        (new_cpos, old_cpos),
+                    )
+                    passed = [r["country_code"] for r in cur.fetchall()]
+
         return {
             "old_pos": old_pos,
             "new_pos": new_pos,
@@ -205,56 +207,84 @@ class Database:
             "new_total": old_total + amount,
             "donor_no": int(donor_no),
             "is_first_donation": old_total == 0,
+            "country": country,
+            "old_country_pos": old_cpos,
+            "new_country_pos": new_cpos,
+            "passed_countries": passed,
         }
 
-    # ------------------------------------------------------------- leaderboard
-    def leaderboard(
+    # ---------------------------------------------------------- leaderboards
+    def leaderboard_users(
         self, period: str, limit: int, user_id: int
     ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
-        """Return (top rows, caller's own {pos, stars} or None).
+        cte = user_cte(period)
+        rows = self._all(cte + "SELECT * FROM r WHERE pos <= %s ORDER BY pos", (limit,))
+        me = self._one(cte + "SELECT pos, stars FROM r WHERE user_id = %s", (user_id,))
+        return rows, me
 
-        period: "all" (all-time) or "week" (rolling 7 days).
-        """
-        if period == "week":
-            cte = _WEEKLY_CTE
-            params: dict[str, Any] = {"since": time.time() - WEEK_SECONDS}
-        else:
-            cte = _ALL_TIME_CTE
-            params = {}
-        with self._lock:
-            rows = self._conn.execute(
-                cte + "SELECT * FROM r WHERE pos <= :limit ORDER BY pos",
-                {**params, "limit": limit},
-            ).fetchall()
-            me = self._conn.execute(
-                cte + "SELECT pos, stars FROM r WHERE user_id = :uid",
-                {**params, "uid": user_id},
-            ).fetchone()
-        return [dict(r) for r in rows], (dict(me) if me else None)
+    def leaderboard_countries(
+        self, period: str, limit: int, country_code: Optional[str]
+    ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
+        cte = country_cte(period)
+        rows = self._all(cte + "SELECT * FROM r WHERE pos <= %s ORDER BY pos", (limit,))
+        mine = None
+        if country_code:
+            mine = self._one(
+                cte + "SELECT country_code, pos, stars, donors FROM r "
+                "WHERE country_code = %s",
+                (country_code,),
+            )
+        return rows, mine
 
-    # ------------------------------------------------------------------- stats
+    def country_top_donors(self, country_code: str, limit: int) -> list[dict[str, Any]]:
+        return self._all(
+            country_donors_cte() + "SELECT * FROM r WHERE pos <= %s ORDER BY pos",
+            (country_code, limit),
+        )
+
+    def donors_of_countries(
+        self, codes: list[str], exclude_user: int, limit: int
+    ) -> list[dict[str, Any]]:
+        """Top donors of the given countries (to send 'you were overtaken')."""
+        if not codes:
+            return []
+        return self._all(
+            f"""
+            SELECT user_id, country_code FROM {S}.users
+            WHERE country_code = ANY(%s) AND total_stars > 0 AND user_id <> %s
+            ORDER BY total_stars DESC
+            LIMIT %s
+            """,
+            (codes, exclude_user, limit),
+        )
+
+    # ------------------------------------------------------------------ stats
     def user_stats(self, user_id: int) -> dict[str, Any]:
-        _, all_me = self.leaderboard("all", 0, user_id)
-        _, week_me = self.leaderboard("week", 0, user_id)
-        with self._lock:
-            u = self._conn.execute(
-                "SELECT total_stars, donor_no, is_anonymous FROM users "
-                "WHERE user_id = ?",
-                (user_id,),
-            ).fetchone()
-            invited = self._conn.execute(
-                "SELECT COUNT(*) FROM users WHERE referrer_id = ?", (user_id,)
-            ).fetchone()[0]
+        _, all_me = self.leaderboard_users("all", 0, user_id)
+        _, week_me = self.leaderboard_users("week", 0, user_id)
+        u = self._one(
+            f"SELECT total_stars, donor_no, is_anonymous, country_code "
+            f"FROM {S}.users WHERE user_id = %s",
+            (user_id,),
+        )
+        invited = self._one(
+            f"SELECT COUNT(*)::bigint AS n FROM {S}.users WHERE referrer_id = %s",
+            (user_id,),
+        )
+        country = u["country_code"] if u else None
+        _, c_all = self.leaderboard_countries("all", 0, country)
         return {
             "total": int(u["total_stars"]) if u else 0,
             "donor_no": u["donor_no"] if u else None,
             "is_anonymous": bool(u["is_anonymous"]) if u else False,
-            "pos": all_me["pos"] if all_me else None,
-            "week_stars": week_me["stars"] if week_me else 0,
-            "week_pos": week_me["pos"] if week_me else None,
-            "invited": int(invited),
+            "country": country,
+            "pos": int(all_me["pos"]) if all_me else None,
+            "week_stars": int(week_me["stars"]) if week_me else 0,
+            "week_pos": int(week_me["pos"]) if week_me else None,
+            "invited": int(invited["n"]) if invited else 0,
+            "country_pos": int(c_all["pos"]) if c_all else None,
+            "country_stars": int(c_all["stars"]) if c_all else 0,
         }
 
     def close(self) -> None:
-        with self._lock:
-            self._conn.close()
+        self.pool.close()
