@@ -14,6 +14,12 @@ python bot.py
 `DATABASE_URL` - Supabase -> Connect -> **Session pooler** ulanish satri (IPv4 bilan ishlaydi).
 Jadvallar `worldrichlist` schema ichida (users, payments); ular `migrations/` ichidagi SQL bilan yaratiladi.
 
+## Mini App
+
+Bot ichida `🚀 Open App` tugmasi (va chat menyusidagi tugma) Telegram Mini App'ni ochadi: podium, davlatlar reytingi, donatchilar, davlat tanlash va Stars bilan to'lov.
+Mini App shu jarayonning o'zida xizmat qiladi: `/app` sahifa, `/api/*` — API (har bir so'rov Telegram `initData` imzosi bilan tekshiriladi).
+`WEBAPP_URL` (yoki Render'dagi `RENDER_EXTERNAL_URL`) ochiq HTTPS manzil bo'lishi kerak. Dizaynni brauzerda ko'rish: `/app?demo=1`.
+
 ## Imkoniyatlar
 
 - 🌍 Country Ranking: davlatlar reytingi (All time / This week), "davlat o'tib ketdi" xabarlari
@@ -36,6 +42,8 @@ Jadvallar `worldrichlist` schema ichida (users, payments); ular `migrations/` ic
 
 ## Fayllar
 
+- `webapp/index.html` - Mini App (bitta fayl)
+- `webapp_server.py`, `webapp_logic.py`, `tg_auth.py` - Mini App API va imzo tekshiruvi
 - `bot.py` - handlerlar, to'lovlar (PreCheckoutQuery, SuccessfulPayment)
 - `db.py`, `sql_queries.py` - Postgres qatlami va reyting so'rovlari
 - `countries.py` - davlatlar ro'yxati

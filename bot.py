@@ -32,14 +32,17 @@ from aiogram.types import (
     KeyboardButton,
     LabeledPrice,
     Message,
+    MenuButtonWebApp,
     PreCheckoutQuery,
     ReplyKeyboardMarkup,
     TelegramObject,
+    WebAppInfo,
 )
 
 import countries
 from countries import COUNTRIES, flag
 from countries import label as country_label
+from common import title_for
 from db import Database
 
 try:  # optional: load .env if python-dotenv is installed
@@ -66,6 +69,10 @@ PAGE_SIZE = 24  # countries per picker page
 SHOW_SAMPLE_ROW = os.getenv("SHOW_SAMPLE_ROW", "1") == "1"
 SAMPLE_STARS = int(os.getenv("SAMPLE_STARS", "100"))
 
+# Mini App (served by this same process). Needs a public HTTPS URL.
+_ext = os.getenv("RENDER_EXTERNAL_URL", "").rstrip("/")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "").strip() or (f"{_ext}/app" if _ext else "")
+
 # "Your country was overtaken" notifications
 NOTIFY_COOLDOWN = 600  # seconds per (overtaken, overtaker) pair
 NOTIFY_LIMIT = 40  # max recipients per overtaken country
@@ -73,15 +80,8 @@ NOTIFY_LIMIT = 40  # max recipients per overtaken country
 BTN_LB = "🏆 Global Leaderboard"
 BTN_DONATE = "⭐ Donate Stars"
 BTN_RANK = "👤 My Rank"
+BTN_APP = "🚀 Open App"
 
-TIERS = (
-    (10000, "💎 Legend"),
-    (2500, "🐋 Whale"),
-    (1000, "🦈 Shark"),
-    (250, "🐬 Dolphin"),
-    (50, "🐟 Fish"),
-    (1, "🦐 Shrimp"),
-)
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 
 db: Database  # initialised in main()
@@ -96,13 +96,6 @@ class DonateStates(StatesGroup):
 
 
 # ------------------------------------------------------------------ helpers
-def title_for(total: int) -> str:
-    for threshold, name in TIERS:
-        if total >= threshold:
-            return name
-    return "🌱 Newcomer"
-
-
 def short(text: str, limit: int = 24) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
@@ -150,11 +143,14 @@ def grid(buttons: list[InlineKeyboardButton], cols: int = 2) -> list[list[Inline
 
 
 def main_menu() -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(text=BTN_LB)],
+        [KeyboardButton(text=BTN_DONATE), KeyboardButton(text=BTN_RANK)],
+    ]
+    if WEBAPP_URL:
+        rows.insert(0, [KeyboardButton(text=BTN_APP, web_app=WebAppInfo(url=WEBAPP_URL))])
     return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=BTN_LB)],
-            [KeyboardButton(text=BTN_DONATE), KeyboardButton(text=BTN_RANK)],
-        ],
+        keyboard=rows,
         resize_keyboard=True,
         input_field_placeholder="Choose an option 👇",
     )
@@ -475,7 +471,7 @@ async def cmd_start(
         "🏆 Country Ranking & Top Donors\n"
         "⭐ Donate Stars for your country\n"
         "👤 Track your rank, title and badges\n\n"
-        "Choose an option below 👇",
+        "🚀 Tap <b>Open App</b> for the full experience, or use the buttons below 👇",
         reply_markup=main_menu(),
     )
 
@@ -491,6 +487,22 @@ async def cmd_help(message: Message) -> None:
         "Your country is chosen with your first donation and then locked.\n"
         "Payments use Telegram Stars only. Payment problems? Send /paysupport.",
         reply_markup=main_menu(),
+    )
+
+
+@router.message(Command("app"))
+async def cmd_app(message: Message) -> None:
+    if not WEBAPP_URL:
+        await message.answer("The app is not available right now.")
+        return
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 Open App", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await message.answer(
+        "🌍 Open the app to see the Country Ranking and donate for your country.",
+        reply_markup=kb,
     )
 
 
@@ -824,26 +836,36 @@ async def fallback(message: Message) -> None:
 
 
 # ----------------------------------------------------- hosting helpers (Render)
-async def start_health_server() -> Optional[Any]:
-    """Tiny HTTP endpoint so web-service hosts (Render) see an open $PORT.
+async def start_web_server(bot: Bot) -> Optional[Any]:
+    """Serve the Mini App + API (and a health check) on $PORT.
 
-    Only started when the PORT env var is set; a no-op locally.
+    Only started when PORT is set (Render) or a WEBAPP_URL is configured.
     """
-    port = os.getenv("PORT")
+    port = os.getenv("PORT") or ("8080" if WEBAPP_URL else "")
     if not port:
         return None
     from aiohttp import web  # installed together with aiogram
 
-    async def health(_: web.Request) -> web.Response:
-        return web.Response(text="ok")
+    import webapp_server
 
-    app = web.Application()
-    app.router.add_get("/", health)
-    app.router.add_get("/health", health)
+    me = await bot.me()
+    app = webapp_server.create_app(
+        bot,
+        db,
+        {
+            "token": BOT_TOKEN,
+            "bot_username": me.username,
+            "presets": list(PRESETS),
+            "min_stars": MIN_STARS,
+            "max_stars": MAX_STARS,
+            "show_sample": SHOW_SAMPLE_ROW,
+            "sample_stars": SAMPLE_STARS,
+        },
+    )
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", int(port)).start()
-    log.info("Health server listening on :%s", port)
+    log.info("Web server listening on :%s (Mini App at %s)", port, WEBAPP_URL or "/app")
     return runner
 
 
@@ -890,7 +912,14 @@ async def main() -> None:
     me = await bot.me()
     log.info("Starting @%s", me.username)
     await bot.delete_webhook(drop_pending_updates=False)
-    web_runner = await start_health_server()
+    web_runner = await start_web_server(bot)
+    if WEBAPP_URL:
+        try:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(text="🚀 Open", web_app=WebAppInfo(url=WEBAPP_URL))
+            )
+        except Exception:
+            log.exception("Could not set the menu button")
     keepalive = asyncio.create_task(keepalive_loop())
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

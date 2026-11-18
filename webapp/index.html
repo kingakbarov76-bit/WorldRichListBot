@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>World Rich List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --ink:#12163A;      /* night sky */
+  --panel:#1B2052;    /* surfaces */
+  --panel2:#252B6B;   /* raised surfaces */
+  --line:#2E3578;     /* dividers */
+  --chalk:#F2F0FF;    /* primary text */
+  --mist:#9AA0D6;     /* secondary text */
+  --gold:#FFC53D;     /* Stars */
+  --you:#62E0B4;      /* "yours" */
+  --bad:#FF6B8A;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--ink);color:var(--chalk);
+  font:500 15px/1.4 "Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
+
+/* ---------- layout ---------- */
+#app{min-height:100vh;padding:0 16px calc(168px + var(--safe-b))}
+header{padding:18px 0 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2}
+.sub{color:var(--mist);font-size:13px;margin-top:4px;max-width:24ch}
+.seg{display:inline-flex;background:var(--panel);border-radius:12px;padding:3px;flex:none}
+.seg button{padding:8px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--mist);min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--chalk)}
+
+/* ---------- flags ---------- */
+.flag{display:inline-block;width:30px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;
+  background:var(--panel2);box-shadow:0 0 0 1px rgba(255,255,255,.08);flex:none}
+.flag.lg{width:54px;height:36px;border-radius:6px}
+.flag-emoji{display:inline-block;width:30px;text-align:center;font-size:18px;line-height:20px}
+.flag-emoji.lg{width:54px;font-size:30px;line-height:36px}
+
+/* ---------- podium ---------- */
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin:6px 0 20px}
+.pod{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.pod .who{margin-top:8px;font-weight:700;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .amt{font-size:12px;color:var(--mist);margin:1px 0 8px}
+.pod .amt b{color:var(--gold);font-family:var(--display);font-weight:700}
+.bar{width:100%;border-radius:12px 12px 4px 4px;background:var(--panel2);display:flex;align-items:flex-start;justify-content:center;
+  padding-top:10px;transform-origin:bottom}
+.bar .num{font-size:26px;color:var(--mist)}
+.pod.first .bar{background:var(--gold)}
+.pod.first .bar .num{color:var(--ink);font-size:34px}
+.pod.mine .who{color:var(--you)}
+.pod.open .flag-slot{width:54px;height:36px;border:2px dashed var(--line);border-radius:6px}
+.pod.open .who{color:var(--mist);font-weight:500}
+.entered .bar{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+.entered .pod.first .bar{animation-delay:.05s}
+.entered .pod:nth-child(1) .bar{animation-delay:.18s}
+.entered .pod:nth-child(3) .bar{animation-delay:.3s}
+@keyframes rise{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
+
+/* ---------- strips & rows ---------- */
+.strip{border:1.5px solid var(--you);border-radius:16px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.strip .t{font-weight:700}
+.strip .d{color:var(--mist);font-size:13px;margin-top:2px}
+.strip .flag{width:40px;height:27px}
+.strip.cta{border-style:dashed;border-color:var(--line)}
+.list{display:flex;flex-direction:column}
+.row{position:relative;display:grid;grid-template-columns:28px 36px 1fr auto;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .pos{font-family:var(--display);font-weight:500;font-size:13px;color:var(--mist);text-align:center}
+.row .name{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{font-size:12px;color:var(--mist);font-weight:500}
+.row .stars{font-family:var(--display);font-weight:700;font-size:14px;color:var(--gold);text-align:right;white-space:nowrap}
+.row .fill{grid-column:2/-1;height:4px;border-radius:2px;background:var(--panel);overflow:hidden;margin-top:-2px}
+.row .fill i{display:block;height:100%;background:var(--line);border-radius:2px}
+.row.mine .name{color:var(--you)}
+.row.mine .fill i{background:var(--you)}
+.row.sample{opacity:.75}
+.row.sample .pos{font-size:16px}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--mist);border:1px dashed var(--line);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.empty{padding:28px 8px;text-align:center;color:var(--mist)}
+.empty b{display:block;color:var(--chalk);font-size:16px;margin-bottom:4px}
+
+/* ---------- me ---------- */
+.card{background:var(--panel);border-radius:18px;padding:16px;margin-bottom:12px}
+.hello{display:flex;align-items:center;gap:12px}
+.hello .avatar{width:48px;height:48px;font-size:18px}
+.hello .t{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.2}
+.hello .d{color:var(--mist);font-size:13px;margin-top:2px}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.trio div{background:var(--ink);border-radius:12px;padding:12px 8px;text-align:center}
+.trio .num{display:block;font-size:20px}
+.trio span.l{display:block;font-size:11.5px;color:var(--mist);margin-top:2px}
+.trio .gold{color:var(--gold)}
+h2{font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:6px}
+.card p{color:var(--mist);font-size:13.5px}
+.btns{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;min-height:46px;border-radius:12px;background:var(--panel2);font-weight:700;padding:0 14px}
+.btn.gold{background:var(--gold);color:var(--ink)}
+.btn:disabled{opacity:.5}
+.setting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.setting:first-of-type{border-top:0}
+.setting small{display:block;color:var(--mist);font-size:12.5px;font-weight:500;margin-top:1px}
+.switch{width:50px;height:30px;border-radius:15px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--chalk);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--you)}
+.switch[aria-checked="true"]::after{transform:translateX(20px);background:var(--ink)}
+ol.how{list-style:none;counter-reset:s;margin-top:4px}
+ol.how li{counter-increment:s;display:flex;gap:12px;padding:8px 0;color:var(--chalk);font-size:14px}
+ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--panel2);
+  display:grid;place-items:center;font-family:var(--display);font-size:12px;color:var(--gold)}
+
+/* ---------- bottom bars ---------- */
+.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--ink) 72%,rgba(18,22,58,0));padding:22px 16px calc(8px + var(--safe-b));z-index:5}
+.donate{width:100%;min-height:54px;border-radius:16px;background:var(--gold);color:var(--ink);font-weight:700;font-size:16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+.donate .flag{width:26px;height:17px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel);border-radius:16px;padding:4px}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border-radius:12px;color:var(--mist);font-size:12px;font-weight:600;min-height:52px}
+.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-selected="true"]{color:var(--gold);background:var(--panel2)}
+
+/* ---------- sheet ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(6,8,28,.65);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;background:var(--panel);border-radius:24px 24px 0 0;
+  padding:10px 16px calc(18px + var(--safe-b));max-height:90vh;overflow:auto;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sheet.open{transform:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
+.sheet h2{font-size:18px;margin-bottom:4px}
+.sheet .lead{color:var(--mist);font-size:13.5px;margin-bottom:14px}
+.search{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--ink);color:var(--chalk);padding:0 14px;font:inherit;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;background:var(--panel2);font-weight:600;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.picklist{max-height:42vh;overflow:auto;margin:6px -4px 0}
+.pick{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 4px;text-align:left;border-radius:10px;font-weight:600}
+.pick:active{background:var(--panel2)}
+.amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.amounts button{min-height:54px;border-radius:14px;background:var(--panel2);font-family:var(--display);font-weight:700;font-size:16px}
+.amounts button[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.amounts button:last-child:nth-child(3n+2){grid-column:span 2}
+.custom{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.custom input{flex:1}
+.custom .search{margin:0}
+.done{text-align:center;padding:12px 0 6px}
+.done .big{font-size:44px;margin-bottom:6px}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin:4px 0}
+.toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-80px);background:var(--panel2);color:var(--chalk);padding:12px 16px;border-radius:12px;
+  z-index:30;max-width:90vw;font-weight:600;font-size:14px;transition:transform .25s;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.toast.show{transform:translate(-50%,0)}
+.gate{min-height:80vh;display:grid;place-items:center;text-align:center;color:var(--mist);padding:24px}
+.gate b{display:block;color:var(--chalk);font-family:var(--display);font-size:20px;margin-bottom:8px}
+.skel{height:64px;border-radius:14px;background:var(--panel);margin-bottom:10px;opacity:.6}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="dock" id="dock" hidden>
+  <button class="donate" id="donateBtn" data-act="open-donate"></button>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="c" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>Countries</button>
+    <button role="tab" data-tab="d" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3 3 0 010 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg>Donors</button>
+    <button role="tab" data-tab="me" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-3.6 3.5-5.6 7.5-5.6s6.9 2 7.5 5.6"/></svg>Me</button>
+  </nav>
+</div>
+<div class="backdrop" id="backdrop" data-act="close-sheet"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+const tg = window.Telegram && window.Telegram.WebApp;
+const INIT = tg ? tg.initData : "";
+const DEMO = !INIT && new URLSearchParams(location.search).has("demo");
+const POPULAR = ["UZ","KZ","KG","TJ","TM","RU","TR","UA","AZ","US","IN","BR"];
+
+const S = {
+  me: null, cfg: null, countries: [], byCode: {},
+  tab: "c", period: "all", scope: "world",
+  board: null, loading: false, entered: false,
+  sheet: { open: false, step: "amount", amount: 50, custom: "", search: "", busy: false, error: "", paid: 0 },
+};
+
+/* ---------------- helpers ---------------- */
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmt = (n) => Number(n).toLocaleString("en-US").replace(/,/g, " ");
+const okCode = (c) => /^[A-Z]{2}$/.test(c || "");
+const cname = (c) => (S.byCode[c] || c || "");
+const emojiFlag = (c) => String.fromCodePoint(...[...c].map((ch) => 0x1F1E6 + ch.charCodeAt(0) - 65));
+function flag(code, big) {
+  if (!okCode(code)) return `<span class="flag-slot"></span>`;
+  const cls = big ? "flag lg" : "flag";
+  return `<img class="${cls}" alt="" loading="lazy" data-emoji="${emojiFlag(code)}" src="https://flagcdn.com/w80/${code.toLowerCase()}.png">`;
+}
+document.addEventListener("error", (e) => {
+  const el = e.target;
+  if (el && el.tagName === "IMG" && el.classList.contains("flag")) {
+    const s = document.createElement("span");
+    s.className = "flag-emoji" + (el.classList.contains("lg") ? " lg" : "");
+    s.textContent = el.dataset.emoji || "🏳️";
+    el.replaceWith(s);
+  }
+}, true);
+const hue = (s) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
+function avatar(name, anon) {
+  const clean = String(name).replace(/^@/, "");
+  const ch = anon ? "🕶" : (clean[0] || "?").toUpperCase();
+  return `<div class="avatar" style="background:hsl(${hue(clean)} 48% 42%)">${esc(ch)}</div>`;
+}
+const haptic = (t) => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || "light"); } catch (_) {} };
+let toastTimer;
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3200);
+}
+
+/* ---------------- API ---------------- */
+async function api(path, opts = {}) {
+  if (DEMO) return demoApi(path, opts);
+  const res = await fetch(path, {
+    method: opts.method || "GET",
+    headers: { "X-Tg-Init-Data": INIT, "Content-Type": "application/json" },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  let data = {};
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error(data.error || "Request failed. Please try again.");
+  return data;
+}
+
+/* ---------------- data loading ---------------- */
+async function loadBoard() {
+  const view = S.tab === "c" ? "c" : (S.scope === "mine" ? "m" : "d");
+  S.loading = true; render();
+  try {
+    S.board = await api(`/api/board?view=${view}&period=${S.period}`);
+  } catch (e) { toast(e.message); }
+  S.loading = false; render();
+}
+async function refreshAll() {
+  try {
+    const b = await api("/api/bootstrap"); S.me = b.me;
+    if (S.tab !== "me") await loadBoard(); else render();
+  } catch (e) { toast(e.message); }
+}
+
+/* ---------------- views ---------------- */
+function podiumHTML(rows) {
+  const lead = rows.length ? rows[0].stars : 0;
+  const slot = (i) => rows[i] || null;
+  const order = [1, 0, 2]; // 2nd, 1st, 3rd
+  const cell = (i) => {
+    const r = slot(i), first = i === 0;
+    const h = r ? Math.max(44, Math.round(132 * (r.stars / (lead || 1)))) : 44;
+    if (!r) return `<div class="pod open"><div class="flag-slot"></div><div class="who">Open spot</div><div class="amt">&nbsp;</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
+    const mine = r.code === S.me.country;
+    return `<div class="pod ${first ? "first" : ""} ${mine ? "mine" : ""}">${flag(r.code, true)}<div class="who">${esc(cname(r.code))}</div><div class="amt"><b>${fmt(r.stars)}</b> ⭐</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
+  };
+  return `<div class="podium ${S.entered ? "" : "entered"}">${order.map(cell).join("")}</div>`;
+}
+
+function stripHTML(b) {
+  const me = S.me;
+  if (!me.country) {
+    return `<div class="strip cta"><div style="flex:1"><div class="t">Pick your country</div><div class="d">Your Stars will count for it.</div></div><button class="btn gold" style="flex:none;min-height:40px" data-act="open-donate">Choose</button></div>`;
+  }
+  const rows = b.rows, mine = b.mine;
+  let line;
+  if (!mine) line = `No Stars yet. Be the first for ${esc(cname(me.country))}.`;
+  else if (mine.pos === 1) line = "You lead the ranking. Keep your lead.";
+  else {
+    const above = rows.find((r) => r.pos === mine.pos - 1);
+    line = above ? `${fmt(above.stars - mine.stars + 1)} ⭐ more to pass ${esc(cname(above.code))}` : "Keep donating to climb.";
+  }
+  const place = mine ? `#${mine.pos} · ${fmt(mine.stars)} ⭐` : "Not ranked yet";
+  return `<div class="strip">${flag(me.country)}<div><div class="t">${esc(cname(me.country))} · ${place}</div><div class="d">${line}</div></div></div>`;
+}
+
+function countriesHTML() {
+  const b = S.board;
+  if (!b || b.view !== "c") return `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
+  const rows = b.rows, lead = rows.length ? rows[0].stars : 0;
+  let html = podiumHTML(rows) + stripHTML(b);
+  const rest = rows.slice(3);
+  const sample = S.cfg.sample.show && lead < S.cfg.sample.stars
+    ? `<div class="row sample"><div class="pos">🎯</div><div class="avatar" style="background:var(--panel2)">🤖</div><div><div class="name">Demo country<span class="tag">sample</span></div><div class="meta">Not a real country. Beat it to take #1.</div></div><div class="stars">${fmt(S.cfg.sample.stars)} ⭐</div></div>` : "";
+  if (!rows.length) {
+    html += `<div class="list">${sample}</div><div class="empty"><b>No Stars donated yet</b>Be the first. Pick your country and donate.</div>`;
+  } else {
+    html += `<div class="list">${sample}${rest.map((r) => {
+      const mine = r.code === S.me.country, w = Math.max(3, Math.round(100 * r.stars / (lead || 1)));
+      return `<div class="row ${mine ? "mine" : ""}"><div class="pos">${r.pos}</div>${flag(r.code)}<div><div class="name">${esc(cname(r.code))}</div><div class="meta">${r.donors} donor${r.donors === 1 ? "" : "s"}</div></div><div class="stars">${fmt(r.stars)} ⭐</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
+    }).join("")}</div>`;
+    if (!rest.length) html += `<div class="empty"><b>The race is just starting</b>Donate for your country and take a spot on the podium.</div>`;
+  }
+  return html;
+}
+
+function donorsHTML() {
+  const b = S.board;
+  if (!b || (b.view !== "d" && b.view !== "m")) return `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
+  if (b.view === "m" && !b.country) {
+    return `<div class="empty"><b>You haven't picked a country</b>Choose one with your first donation.</div>`;
+  }
+  const rows = b.rows;
+  if (!rows.length) return `<div class="empty"><b>No donors yet</b>Be the first on this list.</div>`;
+  const lead = rows[0].stars;
+  return `<div class="list">${rows.map((r) => {
+    const w = Math.max(3, Math.round(100 * r.stars / (lead || 1)));
+    const you = r.is_me ? `<span class="tag">you${r.anon ? ", hidden" : ""}</span>` : "";
+    return `<div class="row ${r.is_me ? "mine" : ""}"><div class="pos">${r.pos}</div>${avatar(r.name, r.anon && !r.is_me)}<div><div class="name">${esc(r.name)}${you}</div><div class="meta">${r.code ? flag(r.code) + " " + esc(cname(r.code)) : ""}</div></div><div class="stars">${fmt(r.stars)} ⭐</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
+  }).join("")}</div>`;
+}
+
+function meHTML() {
+  const m = S.me;
+  const badge = m.donor_no && m.donor_no <= 50 ? ` · Founding Donor #${m.donor_no}` : "";
+  const countryLine = m.country
+    ? `<div class="setting"><div>Your country<small>${m.locked ? "Locked after your first donation" : "You can change it until you donate"}</small></div><div style="display:flex;align-items:center;gap:8px">${flag(m.country)}<b>${esc(cname(m.country))}</b>${m.locked ? "🔒" : ""}</div></div>
+       ${m.locked ? "" : `<div class="setting" style="padding-top:0;border-top:0"><button class="btn" data-act="change-country">Change country</button></div>`}`
+    : `<div class="setting"><div>Your country<small>Choose it with your first donation</small></div><button class="btn gold" style="flex:none;min-height:40px" data-act="open-donate">Choose</button></div>`;
+  const shareText = m.country ? `Help ${cname(m.country)} reach #1 on the Country Ranking! ⭐` : "Which country is the richest in Telegram Stars?";
+  return `
+  <div class="card">
+    <div class="hello">${avatar(m.name, false)}<div><div class="t">${esc(m.name)}</div><div class="d">${esc(m.title)}${esc(badge)}</div></div></div>
+    <div class="trio">
+      <div><span class="num gold">${fmt(m.total)}</span><span class="l">Your Stars</span></div>
+      <div><span class="num">${m.country_pos ? "#" + m.country_pos : "–"}</span><span class="l">Your country</span></div>
+      <div><span class="num">${m.pos ? "#" + m.pos : "–"}</span><span class="l">You</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Invite friends</h2>
+    <p>${m.invited ? `${m.invited} friend${m.invited === 1 ? "" : "s"} joined with your link.` : "Bring friends from your country to climb faster."}</p>
+    <div class="btns"><button class="btn gold" data-act="share" data-text="${esc(shareText)}">Share</button><button class="btn" data-act="copy">Copy link</button></div>
+  </div>
+  <div class="card">
+    <div class="setting"><div>Hide my name<small>Others see “Anonymous”. Your country still counts.</small></div>
+      <button class="switch" role="switch" aria-checked="${m.anon}" aria-label="Hide my name" data-act="anon"></button></div>
+    ${countryLine}
+  </div>
+  <div class="card">
+    <h2>How it works</h2>
+    <ol class="how"><li>Pick your country.</li><li>Donate Telegram Stars.</li><li>Your Stars add to your country's total. The top country wins #1.</li></ol>
+  </div>`;
+}
+
+function headerHTML() {
+  if (S.tab === "me") return `<header><div><h1>Me</h1></div></header>`;
+  const isC = S.tab === "c";
+  const showPeriod = isC || S.scope === "world";
+  const title = isC ? "Country ranking" : "Top donors";
+  const sub = isC ? "Stars donated for each country" : "People who donated the most";
+  const period = showPeriod ? `<div class="seg" role="group" aria-label="Period"><button data-act="period" data-v="all" aria-pressed="${S.period === "all"}">All time</button><button data-act="period" data-v="week" aria-pressed="${S.period === "week"}">Week</button></div>` : "";
+  const scope = !isC ? `<div class="seg" role="group" aria-label="Scope" style="margin-bottom:14px"><button data-act="scope" data-v="world" aria-pressed="${S.scope === "world"}">World</button><button data-act="scope" data-v="mine" aria-pressed="${S.scope === "mine"}">My country</button></div>` : "";
+  return `<header><div><h1>${title}</h1><div class="sub">${sub}</div></div>${period}</header>${scope}`;
+}
+
+function render() {
+  const app = $("#app");
+  if (!S.me) return;
+  let body = S.tab === "c" ? countriesHTML() : S.tab === "d" ? donorsHTML() : meHTML();
+  app.innerHTML = headerHTML() + body;
+  if (S.tab === "c" && S.board && S.board.view === "c") S.entered = true;
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  const c = S.me.country;
+  $("#donateBtn").innerHTML = c ? `<span>Donate for</span>${flag(c)}<span>${esc(cname(c))}</span>` : "⭐ Donate Stars";
+  renderSheet();
+}
+
+/* ---------------- donate sheet ---------------- */
+function renderSheet() {
+  const sh = S.sheet, el = $("#sheet");
+  $("#backdrop").classList.toggle("open", sh.open);
+  el.classList.toggle("open", sh.open);
+  if (!sh.open) return;
+  const keepSearch = document.activeElement && document.activeElement.id === "countrySearch";
+  let html = `<div class="grab"></div>`;
+  if (sh.step === "country") {
+    const q = sh.search.trim().toLowerCase();
+    const list = S.countries.filter((c) => !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase() === q);
+    html += `<h2 id="sheetTitle">Choose your country</h2><div class="lead">Your Stars will count for it. It's locked after your first donation.</div>
+      <input class="search" id="countrySearch" placeholder="Search countries" autocomplete="off" value="${esc(sh.search)}" aria-label="Search countries">`;
+    if (!q) html += `<div class="chips">${POPULAR.filter((c) => S.byCode[c]).map((c) => `<button class="chip" data-act="pick" data-code="${c}">${flag(c)} ${esc(S.byCode[c])}</button>`).join("")}</div>`;
+    html += `<div class="picklist">${list.length ? list.map((c) => `<button class="pick" data-act="pick" data-code="${c.code}">${flag(c.code)} ${esc(c.name)}</button>`).join("") : `<div class="empty">No country found.</div>`}</div>`;
+  } else if (sh.step === "done") {
+    html += `<div class="done"><div class="big">🎉</div><h2 id="sheetTitle">Thank you!</h2><div class="lead">${fmt(sh.paid)} ⭐ added to ${flag(S.me.country)} ${esc(cname(S.me.country))}. The ranking updates in a moment.</div><button class="btn gold" style="width:100%" data-act="close-sheet">Back to ranking</button></div>`;
+  } else {
+    const preset = S.cfg.presets.includes(sh.amount) && !sh.custom;
+    html += `<h2 id="sheetTitle">Donate for ${flag(S.me.country)} ${esc(cname(S.me.country))}</h2><div class="lead">Choose how many Stars to send.</div>
+      <div class="amounts">${S.cfg.presets.map((a) => `<button data-act="amount" data-v="${a}" aria-pressed="${preset && sh.amount === a}">${fmt(a)} ⭐</button>`).join("")}</div>
+      <div class="custom"><input class="search" id="customAmount" inputmode="numeric" pattern="[0-9]*" placeholder="Other amount (${S.cfg.min}–${fmt(S.cfg.max)})" value="${esc(sh.custom)}" aria-label="Custom amount"></div>
+      <div class="setting"><div>Hide my name<small>Others see “Anonymous”</small></div><button class="switch" role="switch" aria-checked="${S.me.anon}" aria-label="Hide my name" data-act="anon"></button></div>
+      <div class="err" id="sheetErr">${esc(sh.error)}</div>
+      <button class="btn gold" style="width:100%;min-height:54px;font-size:16px" data-act="pay" ${sh.busy ? "disabled" : ""}>${sh.busy ? "Opening payment…" : `Donate ${fmt(effectiveAmount())} ⭐`}</button>`;
+  }
+  el.innerHTML = html;
+  if (keepSearch) { const i = $("#countrySearch"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
+}
+const effectiveAmount = () => {
+  const c = parseInt(S.sheet.custom, 10);
+  return S.sheet.custom && Number.isFinite(c) ? c : S.sheet.amount;
+};
+function openSheet() {
+  S.sheet = { ...S.sheet, open: true, error: "", busy: false, search: "", custom: "",
+    step: S.me.country ? "amount" : "country" };
+  renderSheet(); haptic("light");
+}
+function closeSheet() { S.sheet.open = false; renderSheet(); }
+
+async function pay() {
+  const sh = S.sheet, amount = effectiveAmount();
+  if (!Number.isInteger(amount) || amount < S.cfg.min || amount > S.cfg.max) {
+    sh.error = `Enter an amount from ${S.cfg.min} to ${fmt(S.cfg.max)} Stars.`; return renderSheet();
+  }
+  sh.busy = true; sh.error = ""; renderSheet();
+  try {
+    const { link } = await api("/api/invoice", { method: "POST", body: { amount } });
+    tg.openInvoice(link, (status) => {
+      sh.busy = false;
+      if (status === "paid") {
+        sh.step = "done"; sh.paid = amount; renderSheet();
+        try { tg.HapticFeedback.notificationOccurred("success"); } catch (_) {}
+        setTimeout(refreshAll, 1200); setTimeout(refreshAll, 4000);
+      } else if (status === "failed") { sh.error = "The payment didn't go through. Try again."; renderSheet(); }
+      else renderSheet();
+    });
+  } catch (e) { sh.busy = false; sh.error = e.message; renderSheet(); }
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-act],[data-tab]");
+  if (!t) return;
+  if (t.dataset.tab) { S.tab = t.dataset.tab; haptic(); window.scrollTo(0, 0); S.board = null; return S.tab === "me" ? render() : loadBoard(); }
+  const act = t.dataset.act;
+  switch (act) {
+    case "open-donate": case "change-country":
+      openSheet(); if (act === "change-country") { S.sheet.step = "country"; renderSheet(); } break;
+    case "close-sheet": closeSheet(); break;
+    case "period": S.period = t.dataset.v; haptic(); loadBoard(); break;
+    case "scope": S.scope = t.dataset.v; haptic(); S.board = null; loadBoard(); break;
+    case "amount": S.sheet.amount = parseInt(t.dataset.v, 10); S.sheet.custom = ""; S.sheet.error = ""; haptic(); renderSheet(); break;
+    case "pick":
+      try {
+        const r = await api("/api/country", { method: "POST", body: { code: t.dataset.code } });
+        S.me = r.me; S.sheet.step = "amount"; S.sheet.search = ""; haptic("medium"); render();
+      } catch (err) { toast(err.message); }
+      break;
+    case "anon":
+      try { const r = await api("/api/anon", { method: "POST" }); S.me = r.me; haptic(); render(); if (S.sheet.open) renderSheet(); }
+      catch (err) { toast(err.message); }
+      break;
+    case "pay": pay(); break;
+    case "share": {
+      const url = `https://t.me/share/url?url=${encodeURIComponent(S.me.link)}&text=${encodeURIComponent(t.dataset.text || "")}`;
+      tg && tg.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, "_blank"); break; }
+    case "copy":
+      try { await navigator.clipboard.writeText(S.me.link); toast("Link copied"); }
+      catch (_) { toast("Copy this link: " + S.me.link); }
+      break;
+  }
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "countrySearch") { S.sheet.search = e.target.value; renderSheet(); }
+  if (e.target.id === "customAmount") {
+    S.sheet.custom = e.target.value.replace(/\D/g, "").slice(0, 5); e.target.value = S.sheet.custom; S.sheet.error = "";
+    const btn = document.querySelector('[data-act="pay"]'); if (btn) btn.textContent = `Donate ${fmt(effectiveAmount() || 0)} ⭐`;
+    document.querySelectorAll(".amounts button").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  }
+});
+
+/* ---------------- demo data (only with ?demo=1 outside Telegram) ---------------- */
+function demoApi(path, opts) {
+  const names = { UZ:"Uzbekistan", KZ:"Kazakhstan", TR:"Türkiye", KG:"Kyrgyzstan", RU:"Russia", US:"United States", DE:"Germany", IN:"India", BR:"Brazil", JP:"Japan", TJ:"Tajikistan", AZ:"Azerbaijan" };
+  const me = { name: "Demo User", title: "🐬 Dolphin", total: 120, locked: true, donor_no: 7, anon: false, country: "UZ", country_pos: 2, country_stars: 1840, pos: 4, week_stars: 60, week_pos: 3, invited: 2, link: "https://t.me/WorldRichListBot?start=ref_1" };
+  if (path.startsWith("/api/bootstrap")) return Promise.resolve({ me, countries: Object.entries(names).map(([code, name]) => ({ code, name })), config: { presets: [10, 50, 100, 500, 1000], min: 1, max: 10000, sample: { show: false, stars: 100 } } });
+  if (path.startsWith("/api/board")) {
+    if (path.includes("view=c")) return Promise.resolve({ view: "c", period: "all", mine: { code: "UZ", pos: 2, stars: 1840 }, rows: [["KZ",2290,41],["UZ",1840,37],["TR",1210,22],["RU",980,18],["KG",640,12],["US",420,9],["DE",300,6],["AZ",150,4]].map(([code, stars, donors], i) => ({ pos: i + 1, code, stars, donors })) });
+    return Promise.resolve({ view: "d", period: "all", mine: { pos: 4, stars: 120 }, rows: [["@aziz",500,"UZ",0],["Anonymous",420,"KZ",1],["Malika",300,"TR",0],["Demo User",120,"UZ",0,1]].map(([name, stars, code, anon, me], i) => ({ pos: i + 1, name, stars, code, anon: !!anon, is_me: !!me })) });
+  }
+  return Promise.reject(new Error("This is a demo. Open the app from Telegram to donate."));
+}
+
+/* ---------------- boot ---------------- */
+async function boot() {
+  if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor("#12163A"); tg.setBackgroundColor("#12163A"); tg.setBottomBarColor && tg.setBottomBarColor("#12163A"); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (_) {} }
+  if (!INIT && !DEMO) {
+    $("#app").innerHTML = `<div class="gate"><div><b>Open this app from Telegram</b>Find @WorldRichListBot and tap “Open App”.</div></div>`; return;
+  }
+  $("#app").innerHTML = `<div class="skel" style="margin-top:80px"></div><div class="skel"></div><div class="skel"></div>`;
+  try {
+    const b = await api("/api/bootstrap");
+    S.me = b.me; S.cfg = b.config; S.countries = b.countries;
+    S.countries.forEach((c) => { S.byCode[c.code] = c.name; });
+    $("#dock").hidden = false;
+    if (DEMO) { // preview helpers: ?demo=1&tab=d&scope=mine&sheet=country|amount
+      const p = new URLSearchParams(location.search);
+      S.tab = p.get("tab") || "c"; S.scope = p.get("scope") || "world";
+      if (p.get("nocountry")) S.me.country = null;
+    }
+    await loadBoard();
+    if (DEMO && new URLSearchParams(location.search).get("sheet")) {
+      openSheet(); S.sheet.step = new URLSearchParams(location.search).get("sheet"); renderSheet();
+    }
+  } catch (e) {
+    $("#app").innerHTML = `<div class="gate"><div><b>Couldn't load</b>${esc(e.message)}</div></div>`;
+  }
+}
+boot();
+})();
+</script>
+</body>
+</html>
