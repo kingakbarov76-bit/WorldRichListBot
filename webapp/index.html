@@ -163,6 +163,25 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .gate b{display:block;color:var(--chalk);font-family:var(--display);font-size:20px;margin-bottom:8px}
 .skel{height:64px;border-radius:14px;background:var(--panel);margin-bottom:10px;opacity:.6}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- toolbar, ranks ---------- */
+.tools{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.tools .seg button{padding:8px 11px}
+.tools.scope{justify-content:flex-start}
+.ranks{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:10px}
+.ranks th{font-size:12px;font-weight:600;color:var(--mist);text-align:center;padding-bottom:2px}
+.ranks th:first-child,.ranks td:first-child{text-align:left}
+.ranks td{padding:0}
+.ranks .lab{font-weight:600;font-size:14px;padding:12px 0}
+.ranks .lab small{display:block;color:var(--mist);font-size:11.5px;font-weight:500}
+.cell{display:block;width:100%;min-height:46px;border-radius:12px;background:var(--ink);font-family:var(--display);font-weight:700;font-size:15px}
+.cell.none{color:var(--line);font-family:inherit;font-weight:600;font-size:12.5px;color:var(--mist)}
+.cell.top{background:var(--gold);color:var(--ink)}
+.cell.ok{color:var(--you)}
+.cell + .cell{margin-left:6px}
+.ranks td+td{padding-left:6px}
+.pin{display:inline-grid;place-items:center;width:30px;height:20px;font-size:15px}
+.loc{display:flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -170,8 +189,8 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 <div class="dock" id="dock" hidden>
   <button class="donate" id="donateBtn" data-act="open-donate"></button>
   <nav class="tabs" role="tablist" aria-label="Sections">
-    <button role="tab" data-tab="c" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>Countries</button>
-    <button role="tab" data-tab="d" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3 3 0 010 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg>Donors</button>
+    <button role="tab" data-tab="p" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>Places</button>
+    <button role="tab" data-tab="pe" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3 3 0 010 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg>People</button>
     <button role="tab" data-tab="me" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-3.6 3.5-5.6 7.5-5.6s6.9 2 7.5 5.6"/></svg>Me</button>
   </nav>
 </div>
@@ -188,18 +207,22 @@ const DEMO = !INIT && new URLSearchParams(location.search).has("demo");
 const POPULAR = ["UZ","KZ","KG","TJ","TM","RU","TR","UA","AZ","US","IN","BR"];
 
 const S = {
-  me: null, cfg: null, countries: [], byCode: {},
-  tab: "c", period: "all", scope: "world",
-  board: null, loading: false, entered: false,
-  sheet: { open: false, step: "amount", amount: 50, custom: "", search: "", busy: false, error: "", paid: 0 },
+  me: null, cfg: null, countries: [], byCode: {}, regions: {}, regName: {},
+  tab: "p", metric: "stars", period: "all", level: "countries", scope: "world",
+  board: null, loading: false, entered: false, regionAsked: false,
+  sheet: { open: false, step: "amount", after: "amount", amount: 50, custom: "", search: "", busy: false, error: "", paid: 0 },
 };
 
 /* ---------------- helpers ---------------- */
 const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const fmt = (n) => Number(n).toLocaleString("en-US").replace(/,/g, " ");
+const fmt = (n) => Number(n).toLocaleString("en-US").replace(/,/g, " ");
 const okCode = (c) => /^[A-Z]{2}$/.test(c || "");
 const cname = (c) => (S.byCode[c] || c || "");
+const rname = (k) => (S.regName[k] || k || "");
+const unit = () => (S.metric === "stars" ? "⭐" : "👥");
+const val = (v) => `${fmt(v)} ${unit()}`;
+const hasRegions = (cc) => !!(cc && S.regions[cc] && S.regions[cc].length);
 const emojiFlag = (c) => String.fromCodePoint(...[...c].map((ch) => 0x1F1E6 + ch.charCodeAt(0) - 65));
 function flag(code, big) {
   if (!okCode(code)) return `<span class="flag-slot"></span>`;
@@ -243,12 +266,15 @@ async function api(path, opts = {}) {
 }
 
 /* ---------------- data loading ---------------- */
+function boardQuery() {
+  const m = `metric=${S.metric}&period=${S.period}`;
+  if (S.tab === "p") return `kind=places&scope=${S.level}&${m}`;
+  return `kind=people&scope=${S.scope}&${m}`;
+}
 async function loadBoard() {
-  const view = S.tab === "c" ? "c" : (S.scope === "mine" ? "m" : "d");
   S.loading = true; render();
-  try {
-    S.board = await api(`/api/board?view=${view}&period=${S.period}`);
-  } catch (e) { toast(e.message); }
+  try { S.board = await api(`/api/board?${boardQuery()}`); }
+  catch (e) { toast(e.message); }
   S.loading = false; render();
 }
 async function refreshAll() {
@@ -257,151 +283,227 @@ async function refreshAll() {
     if (S.tab !== "me") await loadBoard(); else render();
   } catch (e) { toast(e.message); }
 }
+function normalizeScopes() {
+  const cc = S.me.country;
+  if (S.level === "regions" && !hasRegions(cc)) S.level = "countries";
+  if (S.scope === "region" && !(hasRegions(cc) && S.me.region)) S.scope = (S.scope === "region" && cc) ? "country" : "world";
+  if (S.scope === "country" && !cc) S.scope = "world";
+}
 
-/* ---------------- views ---------------- */
-function podiumHTML(rows) {
-  const lead = rows.length ? rows[0].stars : 0;
-  const slot = (i) => rows[i] || null;
-  const order = [1, 0, 2]; // 2nd, 1st, 3rd
+/* ---------------- shared row pieces ---------------- */
+function podiumHTML(items) {
+  const lead = items.length ? items[0].value : 0;
+  const order = [1, 0, 2];
   const cell = (i) => {
-    const r = slot(i), first = i === 0;
-    const h = r ? Math.max(44, Math.round(132 * (r.stars / (lead || 1)))) : 44;
+    const r = items[i], first = i === 0;
+    const h = r ? Math.max(44, Math.round(132 * (r.value / (lead || 1)))) : 44;
     if (!r) return `<div class="pod open"><div class="flag-slot"></div><div class="who">Open spot</div><div class="amt">&nbsp;</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
-    const mine = r.code === S.me.country;
-    return `<div class="pod ${first ? "first" : ""} ${mine ? "mine" : ""}">${flag(r.code, true)}<div class="who">${esc(cname(r.code))}</div><div class="amt"><b>${fmt(r.stars)}</b> ⭐</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
+    return `<div class="pod ${first ? "first" : ""} ${r.mine ? "mine" : ""}">${r.big}<div class="who">${esc(r.name)}</div><div class="amt"><b>${fmt(r.value)}</b> ${unit()}</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
   };
   return `<div class="podium ${S.entered ? "" : "entered"}">${order.map(cell).join("")}</div>`;
 }
+const ctaStrip = (title, text, act, label) =>
+  `<div class="strip cta"><div style="flex:1"><div class="t">${title}</div><div class="d">${text}</div></div><button class="btn gold" style="flex:none;min-height:40px" data-act="${act}">${label}</button></div>`;
+const shareText = () => S.me.region
+  ? `Help ${rname(S.me.region)} climb the ranking! ⭐`
+  : (S.me.country ? `Help ${cname(S.me.country)} reach #1 on the Country Ranking! ⭐` : "Which country is the richest in Telegram Stars?");
+const SKEL = `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
 
-function stripHTML(b) {
-  const me = S.me;
-  if (!me.country) {
-    return `<div class="strip cta"><div style="flex:1"><div class="t">Pick your country</div><div class="d">Your Stars will count for it.</div></div><button class="btn gold" style="flex:none;min-height:40px" data-act="open-donate">Choose</button></div>`;
-  }
-  const rows = b.rows, mine = b.mine;
-  let line;
-  if (!mine) line = `No Stars yet. Be the first for ${esc(cname(me.country))}.`;
-  else if (mine.pos === 1) line = "You lead the ranking. Keep your lead.";
-  else {
-    const above = rows.find((r) => r.pos === mine.pos - 1);
-    line = above ? `${fmt(above.stars - mine.stars + 1)} ⭐ more to pass ${esc(cname(above.code))}` : "Keep donating to climb.";
-  }
-  const place = mine ? `#${mine.pos} · ${fmt(mine.stars)} ⭐` : "Not ranked yet";
-  return `<div class="strip">${flag(me.country)}<div><div class="t">${esc(cname(me.country))} · ${place}</div><div class="d">${line}</div></div></div>`;
-}
-
-function countriesHTML() {
+/* ---------------- Places tab ---------------- */
+function placesHTML() {
   const b = S.board;
-  if (!b || b.view !== "c") return `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
-  const rows = b.rows, lead = rows.length ? rows[0].stars : 0;
-  let html = podiumHTML(rows) + stripHTML(b);
-  const rest = rows.slice(3);
-  const sample = S.cfg.sample.show && lead < S.cfg.sample.stars
+  if (!b || b.kind !== "places") return SKEL;
+  const regions = b.scope === "regions", cc = S.me.country;
+  const items = b.rows.map((r) => ({
+    value: r.value, members: r.members, key: r.key,
+    name: regions ? rname(r.key) : cname(r.key),
+    mine: regions ? r.key === S.me.region : r.key === cc,
+    big: flag(regions ? b.country : r.key, true),
+    small: flag(regions ? b.country : r.key),
+  }));
+  const lead = items.length ? items[0].value : 0;
+  const who = S.metric === "stars" ? "donor" : "inviter";
+  let strip = "";
+  if (!cc) strip = ctaStrip("Pick your country", "Your Stars and friends will count for it.", "open-donate", "Choose");
+  else if (regions && !S.me.region) strip = ctaStrip("Pick your region", `Join the ${esc(cname(cc))} regional race.`, "set-region", "Choose");
+  else {
+    const myKey = regions ? S.me.region : cc, mine = b.mine;
+    const nm = regions ? rname(myKey) : cname(myKey);
+    let line;
+    if (!mine) line = S.metric === "stars" ? `No Stars yet. Be the first for ${esc(nm)}.` : `No friends yet. Invite someone from ${esc(nm)}.`;
+    else if (mine.pos === 1) line = "You lead the ranking. Keep your lead.";
+    else {
+      const above = items[mine.pos - 2];
+      line = above ? `${fmt(above.value - mine.value + 1)} ${S.metric === "stars" ? "⭐ more" : "more friends"} to pass ${esc(above.name)}` : "Keep going to climb.";
+    }
+    strip = `<div class="strip">${flag(cc)}<div><div class="t">${esc(nm)} · ${mine ? `#${mine.pos} · ${val(mine.value)}` : "Not ranked yet"}</div><div class="d">${line}</div></div></div>`;
+  }
+  let html = podiumHTML(items) + strip;
+  const sample = !regions && S.metric === "stars" && S.period === "all" && S.cfg.sample.show && lead < S.cfg.sample.stars
     ? `<div class="row sample"><div class="pos">🎯</div><div class="avatar" style="background:var(--panel2)">🤖</div><div><div class="name">Demo country<span class="tag">sample</span></div><div class="meta">Not a real country. Beat it to take #1.</div></div><div class="stars">${fmt(S.cfg.sample.stars)} ⭐</div></div>` : "";
-  if (!rows.length) {
-    html += `<div class="list">${sample}</div><div class="empty"><b>No Stars donated yet</b>Be the first. Pick your country and donate.</div>`;
+  if (!items.length) {
+    html += `<div class="list">${sample}</div><div class="empty"><b>${S.metric === "stars" ? "No Stars donated yet" : "No friends invited yet"}</b>${S.metric === "stars" ? "Be the first. Donate for your place." : "Share your link. Friends who pick a country count."}</div>`;
   } else {
-    html += `<div class="list">${sample}${rest.map((r) => {
-      const mine = r.code === S.me.country, w = Math.max(3, Math.round(100 * r.stars / (lead || 1)));
-      return `<div class="row ${mine ? "mine" : ""}"><div class="pos">${r.pos}</div>${flag(r.code)}<div><div class="name">${esc(cname(r.code))}</div><div class="meta">${r.donors} donor${r.donors === 1 ? "" : "s"}</div></div><div class="stars">${fmt(r.stars)} ⭐</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
+    html += `<div class="list">${sample}${items.slice(3).map((r, i) => {
+      const w = Math.max(3, Math.round(100 * r.value / (lead || 1)));
+      return `<div class="row ${r.mine ? "mine" : ""}"><div class="pos">${i + 4}</div>${r.small}<div><div class="name">${esc(r.name)}</div><div class="meta">${r.members} ${who}${r.members === 1 ? "" : "s"}</div></div><div class="stars">${val(r.value)}</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
     }).join("")}</div>`;
-    if (!rest.length) html += `<div class="empty"><b>The race is just starting</b>Donate for your country and take a spot on the podium.</div>`;
+    if (items.length <= 3) html += `<div class="empty"><b>The race is just starting</b>Take a spot on the podium.</div>`;
   }
   return html;
 }
 
-function donorsHTML() {
+/* ---------------- People tab ---------------- */
+function peopleHTML() {
   const b = S.board;
-  if (!b || (b.view !== "d" && b.view !== "m")) return `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
-  if (b.view === "m" && !b.country) {
-    return `<div class="empty"><b>You haven't picked a country</b>Choose one with your first donation.</div>`;
+  if (!b || b.kind !== "people") return SKEL;
+  const scopeName = { world: "the world", country: cname(S.me.country), region: rname(S.me.region) }[b.scope];
+  const rows = b.rows, mine = b.mine;
+  let strip;
+  if (mine) {
+    const above = rows[mine.pos - 2];
+    const line = mine.pos === 1 ? "You lead this list." : (above ? `${fmt(above.value - mine.value + 1)} ${S.metric === "stars" ? "⭐ more" : "more friends"} to pass ${esc(above.name)}` : "Keep going to climb.");
+    strip = `<div class="strip"><div><div class="t">You · #${mine.pos} in ${esc(scopeName)} · ${val(mine.value)}</div><div class="d">${line}</div></div></div>`;
+  } else if (S.metric === "stars") {
+    strip = ctaStrip("You're not on this list yet", `Donate once to appear in ${esc(scopeName)}.`, "open-donate", "Donate");
+  } else {
+    strip = ctaStrip("You're not on this list yet", `Invite a friend who picks a country to appear in ${esc(scopeName)}.`, "share", "Invite");
   }
-  const rows = b.rows;
-  if (!rows.length) return `<div class="empty"><b>No donors yet</b>Be the first on this list.</div>`;
-  const lead = rows[0].stars;
-  return `<div class="list">${rows.map((r) => {
-    const w = Math.max(3, Math.round(100 * r.stars / (lead || 1)));
+  let html = strip;
+  if (!rows.length) {
+    html += `<div class="empty"><b>Nobody here yet</b>${S.metric === "stars" ? "Be the first donor on this list." : "Be the first to invite a friend."}</div>`;
+    return html;
+  }
+  const lead = rows[0].value;
+  html += `<div class="list">${rows.map((r) => {
+    const w = Math.max(3, Math.round(100 * r.value / (lead || 1)));
     const you = r.is_me ? `<span class="tag">you${r.anon ? ", hidden" : ""}</span>` : "";
-    return `<div class="row ${r.is_me ? "mine" : ""}"><div class="pos">${r.pos}</div>${avatar(r.name, r.anon && !r.is_me)}<div><div class="name">${esc(r.name)}${you}</div><div class="meta">${r.code ? flag(r.code) + " " + esc(cname(r.code)) : ""}</div></div><div class="stars">${fmt(r.stars)} ⭐</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
+    const where = (r.region ? esc(rname(r.region)) + ", " : "") + (r.code ? esc(cname(r.code)) : "");
+    return `<div class="row ${r.is_me ? "mine" : ""}"><div class="pos">${r.pos}</div>${avatar(r.name, r.anon && !r.is_me)}<div><div class="name">${esc(r.name)}${you}</div><div class="meta">${r.code ? flag(r.code) + " " : ""}${where}</div></div><div class="stars">${val(r.value)}</div><div class="fill"><i style="width:${w}%"></i></div></div>`;
   }).join("")}</div>`;
+  return html;
 }
 
+/* ---------------- Me tab ---------------- */
+function rankCell(metric, scope, r, enabled) {
+  if (!enabled) return `<span class="cell none" style="display:grid;place-items:center">n/a</span>`;
+  const cls = !r ? "cell none" : r.pos === 1 ? "cell top" : "cell";
+  const txt = r ? `#${r.pos}` : "–";
+  return `<button class="${cls}" data-act="jump" data-metric="${metric}" data-scope="${scope}" aria-label="${metric} ${scope} rank ${txt}">${txt}</button>`;
+}
 function meHTML() {
-  const m = S.me;
+  const m = S.me, rk = m.ranks || {};
   const badge = m.donor_no && m.donor_no <= 50 ? ` · Founding Donor #${m.donor_no}` : "";
+  const reg = hasRegions(m.country);
+  const rows = [
+    ["World", "world", true, ""],
+    [m.country ? esc(cname(m.country)) : "My country", "country", !!m.country, m.country ? "" : "Pick a country"],
+    [m.region ? esc(rname(m.region)) : "My region", "region", reg && !!m.region, reg && !m.region ? "Pick a region" : ""],
+  ];
+  const matrix = `<table class="ranks"><tr><th></th><th>⭐ Stars</th><th>👥 Friends</th></tr>${rows.map(([label, scope, on, hint]) =>
+    `<tr><td class="lab">${label}${hint ? `<small>${hint}</small>` : ""}</td><td>${rankCell("stars", scope, rk["stars_" + scope], on)}</td><td>${rankCell("friends", scope, rk["friends_" + scope], on)}</td></tr>`).join("")}</table>`;
+  const canCountry = !m.locked;
+  const canRegion = reg && (!m.locked || !m.region);
+  const locRow = (label, small, html, act, btn) =>
+    `<div class="setting"><div>${label}<small>${small}</small></div><div class="loc">${html}${act ? `<button class="btn ${btn === "Choose" ? "gold" : ""}" style="flex:none;min-height:40px" data-act="${act}">${btn}</button>` : ""}</div></div>`;
   const countryLine = m.country
-    ? `<div class="setting"><div>Your country<small>${m.locked ? "Locked after your first donation" : "You can change it until you donate"}</small></div><div style="display:flex;align-items:center;gap:8px">${flag(m.country)}<b>${esc(cname(m.country))}</b>${m.locked ? "🔒" : ""}</div></div>
-       ${m.locked ? "" : `<div class="setting" style="padding-top:0;border-top:0"><button class="btn" data-act="change-country">Change country</button></div>`}`
-    : `<div class="setting"><div>Your country<small>Choose it with your first donation</small></div><button class="btn gold" style="flex:none;min-height:40px" data-act="open-donate">Choose</button></div>`;
-  const shareText = m.country ? `Help ${cname(m.country)} reach #1 on the Country Ranking! ⭐` : "Which country is the richest in Telegram Stars?";
+    ? locRow("Country", m.locked ? "Locked after your first donation" : "You can change it until you donate", `${flag(m.country)}<b>${esc(cname(m.country))}</b>${m.locked ? "🔒" : ""}`, canCountry ? "change-country" : "", "Change")
+    : locRow("Country", "Choose it to join the rankings", "", "open-donate", "Choose");
+  const regionLine = reg
+    ? locRow("Region", m.region ? (m.locked ? "Locked after your first donation" : "You can change it until you donate") : "Optional. Adds you to your regional ranking", m.region ? `<b>${esc(rname(m.region))}</b>${m.locked ? "🔒" : ""}` : "", canRegion ? "set-region" : "", m.region ? "Change" : "Choose")
+    : "";
   return `
   <div class="card">
     <div class="hello">${avatar(m.name, false)}<div><div class="t">${esc(m.name)}</div><div class="d">${esc(m.title)}${esc(badge)}</div></div></div>
     <div class="trio">
       <div><span class="num gold">${fmt(m.total)}</span><span class="l">Your Stars</span></div>
-      <div><span class="num">${m.country_pos ? "#" + m.country_pos : "–"}</span><span class="l">Your country</span></div>
-      <div><span class="num">${m.pos ? "#" + m.pos : "–"}</span><span class="l">You</span></div>
+      <div><span class="num">${fmt(m.invited)}</span><span class="l">Friends invited</span></div>
+      <div><span class="num">${m.pos ? "#" + m.pos : "–"}</span><span class="l">World rank</span></div>
     </div>
   </div>
   <div class="card">
-    <h2>Invite friends</h2>
-    <p>${m.invited ? `${m.invited} friend${m.invited === 1 ? "" : "s"} joined with your link.` : "Bring friends from your country to climb faster."}</p>
-    <div class="btns"><button class="btn gold" data-act="share" data-text="${esc(shareText)}">Share</button><button class="btn" data-act="copy">Copy link</button></div>
+    <h2>Your ranks</h2>
+    <p>Not in the world top? Look at your country and region. Tap a rank to see the list.</p>
+    ${matrix}
   </div>
   <div class="card">
-    <div class="setting"><div>Hide my name<small>Others see “Anonymous”. Your country still counts.</small></div>
+    <h2>Invite friends</h2>
+    <p>${m.invited ? `${m.invited} friend${m.invited === 1 ? "" : "s"} joined with your link. A friend counts once they pick a country.` : "Bring friends from your country. A friend counts once they pick a country."}</p>
+    <div class="btns"><button class="btn gold" data-act="share">Share</button><button class="btn" data-act="copy">Copy link</button></div>
+  </div>
+  <div class="card">
+    <div class="setting"><div>Hide my name<small>Others see “Anonymous”. Your place still counts.</small></div>
       <button class="switch" role="switch" aria-checked="${m.anon}" aria-label="Hide my name" data-act="anon"></button></div>
-    ${countryLine}
+    ${countryLine}${regionLine}
   </div>
   <div class="card">
     <h2>How it works</h2>
-    <ol class="how"><li>Pick your country.</li><li>Donate Telegram Stars.</li><li>Your Stars add to your country's total. The top country wins #1.</li></ol>
+    <ol class="how"><li>Pick your country, and your region if it's listed.</li><li>Donate Stars or invite friends.</li><li>You climb the lists for the world, your country and your region.</li></ol>
   </div>`;
 }
 
+/* ---------------- header & render ---------------- */
+const seg = (act, cur, opts, label) =>
+  `<div class="seg" role="group" aria-label="${label}">${opts.map(([v, t]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${t}</button>`).join("")}</div>`;
 function headerHTML() {
   if (S.tab === "me") return `<header><div><h1>Me</h1></div></header>`;
-  const isC = S.tab === "c";
-  const showPeriod = isC || S.scope === "world";
-  const title = isC ? "Country ranking" : "Top donors";
-  const sub = isC ? "Stars donated for each country" : "People who donated the most";
-  const period = showPeriod ? `<div class="seg" role="group" aria-label="Period"><button data-act="period" data-v="all" aria-pressed="${S.period === "all"}">All time</button><button data-act="period" data-v="week" aria-pressed="${S.period === "week"}">Week</button></div>` : "";
-  const scope = !isC ? `<div class="seg" role="group" aria-label="Scope" style="margin-bottom:14px"><button data-act="scope" data-v="world" aria-pressed="${S.scope === "world"}">World</button><button data-act="scope" data-v="mine" aria-pressed="${S.scope === "mine"}">My country</button></div>` : "";
-  return `<header><div><h1>${title}</h1><div class="sub">${sub}</div></div>${period}</header>${scope}`;
+  const cc = S.me.country, reg = hasRegions(cc);
+  const places = S.tab === "p";
+  const title = places ? "Places" : "People";
+  const sub = places ? "Countries and regions, ranked" : "Who leads, near and far";
+  let html = `<header><div><h1>${title}</h1><div class="sub">${sub}</div></div></header>`;
+  html += `<div class="tools">${seg("metric", S.metric, [["stars", "⭐ Stars"], ["friends", "👥 Friends"]], "Ranking by")}${seg("period", S.period, [["all", "All time"], ["week", "Week"]], "Period")}</div>`;
+  if (places) {
+    if (reg) html += `<div class="tools scope">${seg("level", S.level, [["countries", "Countries"], ["regions", esc(cname(cc))]], "Level")}</div>`;
+  } else {
+    const opts = [["world", "World"]];
+    if (cc) opts.push(["country", esc(cname(cc))]);
+    if (reg && S.me.region) opts.push(["region", esc(rname(S.me.region))]);
+    html += `<div class="tools scope">${seg("scope", S.scope, opts, "Area")}</div>`;
+  }
+  return html;
 }
-
 function render() {
   const app = $("#app");
   if (!S.me) return;
-  let body = S.tab === "c" ? countriesHTML() : S.tab === "d" ? donorsHTML() : meHTML();
+  normalizeScopes();
+  const body = S.tab === "p" ? placesHTML() : S.tab === "pe" ? peopleHTML() : meHTML();
   app.innerHTML = headerHTML() + body;
-  if (S.tab === "c" && S.board && S.board.view === "c") S.entered = true;
+  if (S.tab === "p" && S.board && S.board.kind === "places") S.entered = true;
   document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
   const c = S.me.country;
-  $("#donateBtn").innerHTML = c ? `<span>Donate for</span>${flag(c)}<span>${esc(cname(c))}</span>` : "⭐ Donate Stars";
+  $("#donateBtn").innerHTML = c ? `<span>Donate for</span>${flag(c)}<span>${esc(S.me.region ? rname(S.me.region) : cname(c))}</span>` : "⭐ Donate Stars";
   renderSheet();
 }
 
-/* ---------------- donate sheet ---------------- */
+/* ---------------- sheet: country → region → amount ---------------- */
 function renderSheet() {
   const sh = S.sheet, el = $("#sheet");
   $("#backdrop").classList.toggle("open", sh.open);
   el.classList.toggle("open", sh.open);
   if (!sh.open) return;
   const keepSearch = document.activeElement && document.activeElement.id === "countrySearch";
+  const place = S.me.region ? rname(S.me.region) : cname(S.me.country);
   let html = `<div class="grab"></div>`;
   if (sh.step === "country") {
     const q = sh.search.trim().toLowerCase();
     const list = S.countries.filter((c) => !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase() === q);
-    html += `<h2 id="sheetTitle">Choose your country</h2><div class="lead">Your Stars will count for it. It's locked after your first donation.</div>
+    html += `<h2 id="sheetTitle">Choose your country</h2><div class="lead">Your Stars and friends count for it. It's locked after your first donation.</div>
       <input class="search" id="countrySearch" placeholder="Search countries" autocomplete="off" value="${esc(sh.search)}" aria-label="Search countries">`;
     if (!q) html += `<div class="chips">${POPULAR.filter((c) => S.byCode[c]).map((c) => `<button class="chip" data-act="pick" data-code="${c}">${flag(c)} ${esc(S.byCode[c])}</button>`).join("")}</div>`;
     html += `<div class="picklist">${list.length ? list.map((c) => `<button class="pick" data-act="pick" data-code="${c.code}">${flag(c.code)} ${esc(c.name)}</button>`).join("") : `<div class="empty">No country found.</div>`}</div>`;
+  } else if (sh.step === "region") {
+    const q = sh.search.trim().toLowerCase();
+    const list = (S.regions[S.me.country] || []).filter((r) => !q || r.name.toLowerCase().includes(q));
+    html += `<h2 id="sheetTitle">Choose your region</h2><div class="lead">Appear in the ${esc(cname(S.me.country))} regional ranking. It's locked after your first donation.</div>
+      <input class="search" id="countrySearch" placeholder="Search regions" autocomplete="off" value="${esc(sh.search)}" aria-label="Search regions">
+      <div class="picklist">${list.length ? list.map((r) => `<button class="pick" data-act="pick-region" data-key="${esc(r.key)}">${flag(S.me.country)} ${esc(r.name)}</button>`).join("") : `<div class="empty">No region found.</div>`}</div>
+      ${S.me.region ? "" : `<button class="btn" style="width:100%;margin-top:10px" data-act="skip-region">Skip for now</button>`}`;
   } else if (sh.step === "done") {
-    html += `<div class="done"><div class="big">🎉</div><h2 id="sheetTitle">Thank you!</h2><div class="lead">${fmt(sh.paid)} ⭐ added to ${flag(S.me.country)} ${esc(cname(S.me.country))}. The ranking updates in a moment.</div><button class="btn gold" style="width:100%" data-act="close-sheet">Back to ranking</button></div>`;
+    html += `<div class="done"><div class="big">🎉</div><h2 id="sheetTitle">Thank you!</h2><div class="lead">${fmt(sh.paid)} ⭐ added to ${flag(S.me.country)} ${esc(place)}. The ranking updates in a moment.</div><button class="btn gold" style="width:100%" data-act="close-sheet">Back to ranking</button></div>`;
   } else {
     const preset = S.cfg.presets.includes(sh.amount) && !sh.custom;
-    html += `<h2 id="sheetTitle">Donate for ${flag(S.me.country)} ${esc(cname(S.me.country))}</h2><div class="lead">Choose how many Stars to send.</div>
+    html += `<h2 id="sheetTitle">Donate for ${flag(S.me.country)} ${esc(place)}</h2><div class="lead">Choose how many Stars to send.</div>
       <div class="amounts">${S.cfg.presets.map((a) => `<button data-act="amount" data-v="${a}" aria-pressed="${preset && sh.amount === a}">${fmt(a)} ⭐</button>`).join("")}</div>
       <div class="custom"><input class="search" id="customAmount" inputmode="numeric" pattern="[0-9]*" placeholder="Other amount (${S.cfg.min}–${fmt(S.cfg.max)})" value="${esc(sh.custom)}" aria-label="Custom amount"></div>
       <div class="setting"><div>Hide my name<small>Others see “Anonymous”</small></div><button class="switch" role="switch" aria-checked="${S.me.anon}" aria-label="Hide my name" data-act="anon"></button></div>
@@ -415,12 +517,22 @@ const effectiveAmount = () => {
   const c = parseInt(S.sheet.custom, 10);
   return S.sheet.custom && Number.isFinite(c) ? c : S.sheet.amount;
 };
-function openSheet() {
-  S.sheet = { ...S.sheet, open: true, error: "", busy: false, search: "", custom: "",
-    step: S.me.country ? "amount" : "country" };
+function openSheet(step, after) {
+  const m = S.me;
+  let st = step;
+  if (!st) {
+    if (!m.country) st = "country";
+    else if (hasRegions(m.country) && !m.region && !S.regionAsked) { st = "region"; S.regionAsked = true; }
+    else st = "amount";
+  }
+  S.sheet = { ...S.sheet, open: true, error: "", busy: false, search: "", custom: "", step: st, after: after || "amount" };
   renderSheet(); haptic("light");
 }
 function closeSheet() { S.sheet.open = false; renderSheet(); }
+function afterPick() {
+  if (S.sheet.after === "close") { closeSheet(); if (S.tab !== "me") loadBoard(); else render(); }
+  else { S.sheet.step = "amount"; S.sheet.search = ""; render(); }
+}
 
 async function pay() {
   const sh = S.sheet, amount = effectiveAmount();
@@ -443,31 +555,45 @@ async function pay() {
 }
 
 /* ---------------- events ---------------- */
+function reload() { S.board = null; haptic(); loadBoard(); }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-act],[data-tab]");
   if (!t) return;
   if (t.dataset.tab) { S.tab = t.dataset.tab; haptic(); window.scrollTo(0, 0); S.board = null; return S.tab === "me" ? render() : loadBoard(); }
-  const act = t.dataset.act;
-  switch (act) {
-    case "open-donate": case "change-country":
-      openSheet(); if (act === "change-country") { S.sheet.step = "country"; renderSheet(); } break;
+  const v = t.dataset.v;
+  switch (t.dataset.act) {
+    case "open-donate": openSheet(); break;
+    case "change-country": openSheet("country", "close"); break;
+    case "set-region": openSheet("region", "close"); break;
     case "close-sheet": closeSheet(); break;
-    case "period": S.period = t.dataset.v; haptic(); loadBoard(); break;
-    case "scope": S.scope = t.dataset.v; haptic(); S.board = null; loadBoard(); break;
-    case "amount": S.sheet.amount = parseInt(t.dataset.v, 10); S.sheet.custom = ""; S.sheet.error = ""; haptic(); renderSheet(); break;
+    case "metric": S.metric = v; reload(); break;
+    case "period": S.period = v; reload(); break;
+    case "level": S.level = v; reload(); break;
+    case "scope": S.scope = v; reload(); break;
+    case "jump": S.tab = "pe"; S.metric = t.dataset.metric; S.scope = t.dataset.scope; S.period = "all"; window.scrollTo(0, 0); reload(); break;
+    case "amount": S.sheet.amount = parseInt(v, 10); S.sheet.custom = ""; S.sheet.error = ""; haptic(); renderSheet(); break;
     case "pick":
       try {
         const r = await api("/api/country", { method: "POST", body: { code: t.dataset.code } });
-        S.me = r.me; S.sheet.step = "amount"; S.sheet.search = ""; haptic("medium"); render();
+        S.me = r.me; haptic("medium");
+        if (hasRegions(S.me.country)) { S.regionAsked = true; S.sheet.step = "region"; S.sheet.search = ""; render(); }
+        else afterPick();
       } catch (err) { toast(err.message); }
       break;
+    case "pick-region":
+      try {
+        const r = await api("/api/region", { method: "POST", body: { key: t.dataset.key } });
+        S.me = r.me; haptic("medium"); afterPick();
+      } catch (err) { toast(err.message); }
+      break;
+    case "skip-region": afterPick(); break;
     case "anon":
-      try { const r = await api("/api/anon", { method: "POST" }); S.me = r.me; haptic(); render(); if (S.sheet.open) renderSheet(); }
+      try { const r = await api("/api/anon", { method: "POST" }); S.me = r.me; haptic(); render(); }
       catch (err) { toast(err.message); }
       break;
     case "pay": pay(); break;
     case "share": {
-      const url = `https://t.me/share/url?url=${encodeURIComponent(S.me.link)}&text=${encodeURIComponent(t.dataset.text || "")}`;
+      const url = `https://t.me/share/url?url=${encodeURIComponent(S.me.link)}&text=${encodeURIComponent(shareText())}`;
       tg && tg.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, "_blank"); break; }
     case "copy":
       try { await navigator.clipboard.writeText(S.me.link); toast("Link copied"); }
@@ -485,13 +611,29 @@ document.addEventListener("input", (e) => {
 });
 
 /* ---------------- demo data (only with ?demo=1 outside Telegram) ---------------- */
+const DEMO_STATE = { region: "UZ-SAMARKAND", country: "UZ" };
 function demoApi(path, opts) {
   const names = { UZ:"Uzbekistan", KZ:"Kazakhstan", TR:"Türkiye", KG:"Kyrgyzstan", RU:"Russia", US:"United States", DE:"Germany", IN:"India", BR:"Brazil", JP:"Japan", TJ:"Tajikistan", AZ:"Azerbaijan" };
-  const me = { name: "Demo User", title: "🐬 Dolphin", total: 120, locked: true, donor_no: 7, anon: false, country: "UZ", country_pos: 2, country_stars: 1840, pos: 4, week_stars: 60, week_pos: 3, invited: 2, link: "https://t.me/WorldRichListBot?start=ref_1" };
-  if (path.startsWith("/api/bootstrap")) return Promise.resolve({ me, countries: Object.entries(names).map(([code, name]) => ({ code, name })), config: { presets: [10, 50, 100, 500, 1000], min: 1, max: 10000, sample: { show: false, stars: 100 } } });
+  const regs = { UZ: [["UZ-ANDIJAN","Andijan"],["UZ-BUKHARA","Bukhara"],["UZ-FERGANA","Fergana"],["UZ-SAMARKAND","Samarkand"],["UZ-TASHKENT-CITY","Tashkent City"]] };
+  const me = () => ({ name: "Demo User", title: "🐬 Dolphin", total: 120, locked: true, donor_no: 7, anon: false, country: DEMO_STATE.country, region: DEMO_STATE.region, pos: 14, week_stars: 60, week_pos: 3, invited: 2,
+    ranks: { country: "UZ", region: "UZ-SAMARKAND", stars_world: { pos: 14, value: 120 }, stars_country: { pos: 3, value: 120 }, stars_region: { pos: 1, value: 120 }, friends_world: null, friends_country: { pos: 2, value: 2 }, friends_region: { pos: 1, value: 2 } },
+    link: "https://t.me/WorldRichListBot?start=ref_1" });
+  if (path.startsWith("/api/bootstrap")) return Promise.resolve({ me: me(), countries: Object.entries(names).map(([code, name]) => ({ code, name })), regions: Object.fromEntries(Object.entries(regs).map(([c, l]) => [c, l.map(([key, name]) => ({ key, name }))])), config: { presets: [10, 50, 100, 500, 1000], min: 1, max: 10000, sample: { show: false, stars: 100 } } });
+  if (path.startsWith("/api/country")) { DEMO_STATE.country = JSON.parse(opts.body ? JSON.stringify(opts.body) : "{}").code; DEMO_STATE.region = null; return Promise.resolve({ me: me() }); }
+  if (path.startsWith("/api/region")) { DEMO_STATE.region = opts.body.key; return Promise.resolve({ me: me() }); }
   if (path.startsWith("/api/board")) {
-    if (path.includes("view=c")) return Promise.resolve({ view: "c", period: "all", mine: { code: "UZ", pos: 2, stars: 1840 }, rows: [["KZ",2290,41],["UZ",1840,37],["TR",1210,22],["RU",980,18],["KG",640,12],["US",420,9],["DE",300,6],["AZ",150,4]].map(([code, stars, donors], i) => ({ pos: i + 1, code, stars, donors })) });
-    return Promise.resolve({ view: "d", period: "all", mine: { pos: 4, stars: 120 }, rows: [["@aziz",500,"UZ",0],["Anonymous",420,"KZ",1],["Malika",300,"TR",0],["Demo User",120,"UZ",0,1]].map(([name, stars, code, anon, me], i) => ({ pos: i + 1, name, stars, code, anon: !!anon, is_me: !!me })) });
+    const q = new URLSearchParams(path.split("?")[1]), f = q.get("metric") === "friends" ? 0.05 : 1;
+    const v = (n) => Math.max(1, Math.round(n * f));
+    if (q.get("kind") === "places") {
+      if (q.get("scope") === "regions") return Promise.resolve({ kind: "places", scope: "regions", country: "UZ", mine: { key: "UZ-SAMARKAND", pos: 2, value: v(900) }, rows: [["UZ-TASHKENT-CITY",1300,18],["UZ-SAMARKAND",900,11],["UZ-FERGANA",410,6],["UZ-ANDIJAN",120,3]].map(([key, value, members], i) => ({ pos: i + 1, key, value: v(value), members })) });
+      return Promise.resolve({ kind: "places", scope: "countries", country: null, mine: { key: "UZ", pos: 2, value: v(1840) }, rows: [["KZ",2290,41],["UZ",1840,37],["TR",1210,22],["RU",980,18],["KG",640,12],["US",420,9],["DE",300,6],["AZ",150,4]].map(([key, value, members], i) => ({ pos: i + 1, key, value: v(value), members })) });
+    }
+    const scope = q.get("scope");
+    const all = [["@aziz",500,"UZ","UZ-TASHKENT-CITY",0],["Anonymous",420,"KZ","KZ-ALMATY",1],["Malika",300,"UZ","UZ-SAMARKAND",0],["Demo User",120,"UZ","UZ-SAMARKAND",0,1]];
+    const list = scope === "world" ? all : scope === "country" ? all.filter((r) => r[2] === "UZ") : all.filter((r) => r[3] === "UZ-SAMARKAND");
+    const rows = list.map(([name, value, code, region, anon, isMe], i) => ({ pos: i + 1, name, value: v(value), code, region, anon: !!anon, is_me: !!isMe }));
+    const mineRow = rows.find((r) => r.is_me);
+    return Promise.resolve({ kind: "people", scope, geo: null, rows, mine: mineRow ? { pos: mineRow.pos, value: mineRow.value } : null });
   }
   return Promise.reject(new Error("This is a demo. Open the app from Telegram to donate."));
 }
@@ -505,18 +647,17 @@ async function boot() {
   $("#app").innerHTML = `<div class="skel" style="margin-top:80px"></div><div class="skel"></div><div class="skel"></div>`;
   try {
     const b = await api("/api/bootstrap");
-    S.me = b.me; S.cfg = b.config; S.countries = b.countries;
+    S.me = b.me; S.cfg = b.config; S.countries = b.countries; S.regions = b.regions || {};
     S.countries.forEach((c) => { S.byCode[c.code] = c.name; });
+    Object.values(S.regions).forEach((l) => l.forEach((r) => { S.regName[r.key] = r.name; }));
     $("#dock").hidden = false;
-    if (DEMO) { // preview helpers: ?demo=1&tab=d&scope=mine&sheet=country|amount
-      const p = new URLSearchParams(location.search);
-      S.tab = p.get("tab") || "c"; S.scope = p.get("scope") || "world";
+    const p = new URLSearchParams(location.search);
+    if (DEMO) { // preview helpers: ?demo=1&tab=p|pe|me&metric=friends&level=regions&scope=country&sheet=country|region|amount&nocountry=1
+      S.tab = p.get("tab") || "p"; S.metric = p.get("metric") || "stars"; S.level = p.get("level") || "countries"; S.scope = p.get("scope") || "world";
       if (p.get("nocountry")) S.me.country = null;
     }
-    await loadBoard();
-    if (DEMO && new URLSearchParams(location.search).get("sheet")) {
-      openSheet(); S.sheet.step = new URLSearchParams(location.search).get("sheet"); renderSheet();
-    }
+    S.tab === "me" ? render() : await loadBoard();
+    if (DEMO && p.get("sheet")) { openSheet(p.get("sheet")); }
   } catch (e) {
     $("#app").innerHTML = `<div class="gate"><div><b>Couldn't load</b>${esc(e.message)}</div></div>`;
   }

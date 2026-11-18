@@ -48,3 +48,10 @@ Mini App shu jarayonning o'zida xizmat qiladi: `/app` sahifa, `/api/*` — API (
 - `db.py`, `sql_queries.py` - Postgres qatlami va reyting so'rovlari
 - `countries.py` - davlatlar ro'yxati
 - `migrations/001_initial_schema.sql` - baza sxemasi
+
+## Ko'p darajali reyting (Dunyo → Davlat → Viloyat)
+
+- Mini App: **Places** (davlatlar / viloyatlar), **People** (dunyo / davlat / viloyat), **Me** ("Your ranks" jadvali).
+- Ikki o'lchov: ⭐ Stars va 👥 Friends (taklif qilingan do'st davlat tanlaganda hisoblanadi).
+- Viloyatlar faqat UZ, KZ, KG, TJ, TM, TR uchun (`regions.py`). Shaharlar yo'q: erkin matn spam va dublikat keltiradi.
+- Migratsiya: `migrations/002_regions_and_activation.sql` (Supabase'da qo'llangan).

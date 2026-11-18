@@ -11,7 +11,10 @@ from typing import Any, Optional
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
-from sql_queries import S, country_cte, country_donors_cte, user_cte
+from regions import is_valid
+from sql_queries import (
+    S, country_cte, country_donors_cte, people_ranked, places_ranked, user_cte,
+)
 
 
 class Database:
@@ -109,17 +112,57 @@ class Database:
         return bool(row and row["total_stars"] > 0)
 
     def set_country(self, user_id: int, code: str) -> bool:
-        """Choose a country. Locked after the first donation."""
+        """Choose a country. Locked after the first donation.
+
+        Changing the country clears the region; the first pick "activates" the
+        user (this is what makes an invite count as a referral).
+        """
         return (
             self._exec(
                 f"""
-                UPDATE {S}.users SET country_code = %s
+                UPDATE {S}.users
+                SET region_code = CASE WHEN country_code IS DISTINCT FROM %s
+                                       THEN NULL ELSE region_code END,
+                    country_code = %s,
+                    activated_at = COALESCE(activated_at, now())
                 WHERE user_id = %s AND (total_stars = 0 OR country_code IS NULL)
                 """,
-                (code.upper(), user_id),
+                (code.upper(), code.upper(), user_id),
             )
             == 1
         )
+
+    def get_region(self, user_id: int) -> Optional[str]:
+        row = self._one(
+            f"SELECT region_code FROM {S}.users WHERE user_id = %s", (user_id,)
+        )
+        return row["region_code"] if row and row["region_code"] else None
+
+    def set_region(self, user_id: int, key: Optional[str]) -> bool:
+        """Set/clear the region. Allowed any time while it is still empty;
+        once set it is locked after the first donation. Past payments are
+        back-filled so regional boards stay consistent."""
+        country = self.get_country(user_id)
+        if not country or (key is not None and not is_valid(country, key)):
+            return False
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    UPDATE {S}.users SET region_code = %s
+                    WHERE user_id = %s
+                      AND (total_stars = 0 OR region_code IS NULL)
+                    """,
+                    (key, user_id),
+                )
+                if cur.rowcount != 1:
+                    return False
+                cur.execute(
+                    f"UPDATE {S}.payments SET region_code = %s "
+                    f"WHERE user_id = %s AND region_code IS NULL",
+                    (key, user_id),
+                )
+        return True
 
     # ------------------------------------------------------------- payments
     def _user_pos(self, cur: Any, user_id: int) -> Optional[int]:
@@ -147,7 +190,7 @@ class Database:
                 )
                 # Row lock serialises concurrent payments of the same user.
                 cur.execute(
-                    f"SELECT total_stars, donor_no, country_code FROM {S}.users "
+                    f"SELECT total_stars, donor_no, country_code, region_code FROM {S}.users "
                     f"WHERE user_id = %s FOR UPDATE",
                     (user_id,),
                 )
@@ -165,9 +208,10 @@ class Database:
                 old_cpos = self._country_pos(cur, country) if country else None
 
                 cur.execute(
-                    f"INSERT INTO {S}.payments (charge_id, user_id, amount, country_code) "
-                    f"VALUES (%s, %s, %s, %s) ON CONFLICT (charge_id) DO NOTHING",
-                    (charge_id, user_id, amount, country),
+                    f"INSERT INTO {S}.payments "
+                    f"(charge_id, user_id, amount, country_code, region_code) "
+                    f"VALUES (%s, %s, %s, %s, %s) ON CONFLICT (charge_id) DO NOTHING",
+                    (charge_id, user_id, amount, country, u["region_code"]),
                 )
                 if cur.rowcount == 0:
                     return None
@@ -257,6 +301,51 @@ class Database:
             """,
             (codes, exclude_user, limit),
         )
+
+    # ------------------------------------------------- multi-level boards
+    def board_people(
+        self, metric: str, period: str, scope: str, user_id: int,
+        geo_key: Optional[str], limit: int,
+    ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
+        cte = people_ranked(metric, period, scope)
+        gp: tuple = (geo_key,) if scope != "world" else ()
+        rows = self._all(cte + "SELECT * FROM ranked WHERE pos <= %s ORDER BY pos", gp + (limit,))
+        me = self._one(cte + "SELECT pos, value FROM ranked WHERE user_id = %s", gp + (user_id,))
+        return rows, me
+
+    def board_places(
+        self, metric: str, period: str, level: str, country: Optional[str],
+        my_key: Optional[str], limit: int,
+    ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
+        cte = places_ranked(metric, period, level)
+        gp: tuple = (country,) if level == "regions" else ()
+        rows = self._all(cte + "SELECT * FROM ranked WHERE pos <= %s ORDER BY pos", gp + (limit,))
+        mine = None
+        if my_key:
+            mine = self._one(
+                cte + "SELECT place, pos, value, members FROM ranked WHERE place = %s",
+                gp + (my_key,),
+            )
+        return rows, mine
+
+    def ranks(self, user_id: int) -> dict[str, Any]:
+        """Position of the user on every board (all-time), or None if absent."""
+        u = self._one(
+            f"SELECT country_code, region_code FROM {S}.users WHERE user_id = %s",
+            (user_id,),
+        ) or {}
+        cc, rc = u.get("country_code"), u.get("region_code")
+        out: dict[str, Any] = {"country": cc, "region": rc}
+        for metric in ("stars", "friends"):
+            for scope, key in (("world", None), ("country", cc), ("region", rc)):
+                if scope != "world" and not key:
+                    out[f"{metric}_{scope}"] = None
+                    continue
+                _, me = self.board_people(metric, "all", scope, user_id, key, 0)
+                out[f"{metric}_{scope}"] = (
+                    {"pos": int(me["pos"]), "value": int(me["value"])} if me else None
+                )
+        return out
 
     # ------------------------------------------------------------------ stats
     def user_stats(self, user_id: int) -> dict[str, Any]:
