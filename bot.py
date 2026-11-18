@@ -77,12 +77,12 @@ WEBAPP_URL = os.getenv("WEBAPP_URL", "").strip() or (f"{_ext}/app" if _ext else 
 NOTIFY_COOLDOWN = 600  # seconds per (overtaken, overtaker) pair
 NOTIFY_LIMIT = 40  # max recipients per overtaken country
 
-BTN_LB = "🏆 Global Leaderboard"
-BTN_DONATE = "⭐ Donate Stars"
-BTN_RANK = "👤 My Rank"
-BTN_APP = "🚀 Open App"
+BTN_LB = "♛ Rich List"
+BTN_DONATE = "★ Donate"
+BTN_RANK = "◈ My Standing"
+BTN_APP = "◆ Open App"
 
-MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+MEDALS = {1: "<b>I</b>", 2: "<b>II</b>", 3: "<b>III</b>"}
 
 db: Database  # initialised in main()
 router = Router()
@@ -111,10 +111,10 @@ def donor_name(row: dict[str, Any], viewer_id: int) -> str:
     """Flag + name as shown in donor lists (viewer always sees their own)."""
     prefix = f"{flag(row['country_code'])} " if row.get("country_code") else ""
     if row["user_id"] == viewer_id:
-        hidden = " 🕶 <i>(you, hidden from others)</i>" if row.get("is_anonymous") else " <i>(you)</i>"
+        hidden = " <i>(you, hidden from others)</i>" if row.get("is_anonymous") else " <i>(you)</i>"
         return prefix + _person(row) + hidden
     if row.get("is_anonymous"):
-        return prefix + "🕶 Anonymous"
+        return prefix + "Anonymous"
     return prefix + _person(row)
 
 
@@ -152,7 +152,7 @@ def main_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=rows,
         resize_keyboard=True,
-        input_field_placeholder="Choose an option 👇",
+        input_field_placeholder="Choose below",
     )
 
 
@@ -178,12 +178,12 @@ class UserTrackerMiddleware(BaseMiddleware):
 # --------------------------------------------------------------- leaderboard
 def leaderboard_keyboard(view: str, period: str) -> InlineKeyboardMarkup:
     def tab(text: str, v: str, p: str, active: bool) -> InlineKeyboardButton:
-        return btn(("• " if active else "") + text, f"lb:{v}:{p}")
+        return btn(("◆ " if active else "") + text, f"lb:{v}:{p}")
 
     rows = [
         [
-            tab("🌍 Countries", "c", period, view == "c"),
-            tab("👤 Donors", "d", period, view == "d"),
+            tab("Countries", "c", period, view == "c"),
+            tab("Donors", "d", period, view == "d"),
         ]
     ]
     if view in ("c", "d"):
@@ -195,8 +195,8 @@ def leaderboard_keyboard(view: str, period: str) -> InlineKeyboardMarkup:
         )
     rows.append(
         [
-            tab("🏳️ My country", "m", "all", view == "m"),
-            btn("⭐ Donate", "menu:donate"),
+            tab("My country", "m", "all", view == "m"),
+            btn("★ Donate", "menu:donate"),
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -205,7 +205,7 @@ def leaderboard_keyboard(view: str, period: str) -> InlineKeyboardMarkup:
 def sample_lines(top_stars: int, noun: str) -> list[str]:
     if SHOW_SAMPLE_ROW and top_stars < SAMPLE_STARS:
         return [
-            f"🎯 <i>Sample entry (not a real {noun}):</i> 🤖 Demo — {SAMPLE_STARS} ⭐",
+            f"<i>Sample entry (not a real {noun}):</i> Demo — {SAMPLE_STARS} ⭐",
             "<i>Beat it to take the #1 spot!</i>",
             "",
         ]
@@ -217,53 +217,53 @@ async def build_country_board(period: str, period_name: str, viewer_id: int) -> 
     rows, mine = await asyncio.to_thread(
         db.leaderboard_countries, period, TOP_N, my_country
     )
-    lines = [f"🌍 <b>Country Ranking</b> — {period_name}", ""]
+    lines = ["✦ <b>COUNTRY RANKING</b> ✦", f"<i>{period_name}</i>", ""]
     lines += sample_lines(rows[0]["stars"] if rows else 0, "country")
     if not rows:
-        lines.append("No country on the board yet — put yours first! 👑")
+        lines.append("No country on the board yet. Put yours first ♛")
     else:
         for row in rows:
             pos = row["pos"]
-            medal = MEDALS.get(pos, f"<b>{pos}.</b>")
-            mark = "  ⬅️ <i>yours</i>" if row["country_code"] == my_country else ""
+            medal = MEDALS.get(pos, f"<b>{pos}</b>")
+            mark = "  ◂ <i>yours</i>" if row["country_code"] == my_country else ""
             lines.append(
                 f"{medal} {country_label(row['country_code'])} — "
                 f"<b>{row['stars']}</b> ⭐ · {plural(row['donors'], 'donor')}{mark}"
             )
-    lines += ["", "━━━━━━━━━━━━━━"]
+    lines += ["", "──────────────"]
     if not my_country:
-        lines.append("📍 Pick your country with your first donation and fight for it! 🏳️")
+        lines.append("◆ Pick your country with your first donation and fight for it.")
     elif mine:
         lines.append(
-            f"📍 Your country: {country_label(my_country)} — "
+            f"◆ Your country: {country_label(my_country)} — "
             f"<b>#{mine['pos']}</b> · <b>{mine['stars']}</b> ⭐"
         )
     else:
         lines.append(
-            f"📍 {country_label(my_country)} isn't on the board yet — be the first to donate!"
+            f"◆ {country_label(my_country)} isn't on the board yet. Be the first to donate."
         )
     return "\n".join(lines)
 
 
 async def build_donor_board(period: str, period_name: str, viewer_id: int) -> str:
     rows, me = await asyncio.to_thread(db.leaderboard_users, period, TOP_N, viewer_id)
-    lines = [f"👤 <b>Top Donors</b> — {period_name}", ""]
+    lines = ["✦ <b>TOP DONORS</b> ✦", f"<i>{period_name}</i>", ""]
     lines += sample_lines(rows[0]["stars"] if rows else 0, "donor")
     if not rows:
-        lines.append("No donors yet — be the first on the list! 👑")
+        lines.append("No donors yet. Be the first on the list ♛")
     else:
         for row in rows:
-            medal = MEDALS.get(row["pos"], f"<b>{row['pos']}.</b>")
+            medal = MEDALS.get(row["pos"], f"<b>{row['pos']}</b>")
             lines.append(
                 f"{medal} {donor_name(row, viewer_id)} — <b>{row['stars']}</b> ⭐"
             )
-    lines += ["", "━━━━━━━━━━━━━━"]
+    lines += ["", "──────────────"]
     if me:
         lines.append(
-            f"📍 Your rank: <b>#{me['pos']}</b> · Balance: <b>{me['stars']}</b> ⭐"
+            f"◆ Your rank: <b>#{me['pos']}</b> · Balance: <b>{me['stars']}</b> ⭐"
         )
     else:
-        lines.append("📍 You're not on the board yet — donate to join!")
+        lines.append("◆ You're not on the board yet. Donate to join.")
     return "\n".join(lines)
 
 
@@ -271,16 +271,16 @@ async def build_my_country_board(viewer_id: int) -> str:
     code = await asyncio.to_thread(db.get_country, viewer_id)
     if not code:
         return (
-            "🏳️ <b>My country</b>\n\nYou haven't picked a country yet.\n"
-            "Tap ⭐ <b>Donate</b> — you'll choose it with your first donation."
+            "✦ <b>MY COUNTRY</b> ✦\n\nYou haven't picked a country yet.\n"
+            "Tap <b>★ Donate</b>: you'll choose it with your first donation."
         )
     rows = await asyncio.to_thread(db.country_top_donors, code, 10)
-    lines = [f"🏳️ <b>{country_label(code)}</b> — top donors", ""]
+    lines = [f"✦ <b>{country_label(code)}</b> ✦", "<i>Top donors</i>", ""]
     if not rows:
-        lines.append("Nobody has donated for this country yet. Be the first! 👑")
+        lines.append("Nobody has donated for this country yet. Be the first ♛")
     else:
         for row in rows:
-            medal = MEDALS.get(row["pos"], f"<b>{row['pos']}.</b>")
+            medal = MEDALS.get(row["pos"], f"<b>{row['pos']}</b>")
             lines.append(
                 f"{medal} {donor_name(row, viewer_id)} — <b>{row['stars']}</b> ⭐"
             )
@@ -298,7 +298,7 @@ async def build_leaderboard(view: str, period: str, viewer_id: int) -> str:
 
 # -------------------------------------------------------------------- rank
 def anon_label(is_anonymous: bool) -> str:
-    return "🕶 Anonymous mode: ON" if is_anonymous else "👁 Anonymous mode: OFF"
+    return "◉ Anonymous: ON" if is_anonymous else "○ Anonymous: OFF"
 
 
 async def build_rank(user_id: int, bot: Bot) -> tuple[str, InlineKeyboardMarkup]:
@@ -307,42 +307,42 @@ async def build_rank(user_id: int, bot: Bot) -> tuple[str, InlineKeyboardMarkup]
     link = f"https://t.me/{me.username}?start=ref_{user_id}"
     country = s["country"]
 
-    lines = ["👤 <b>My Rank</b>", ""]
+    lines = ["◈ <b>MY STANDING</b>", "──────────────", ""]
     lines.append(f"Title: <b>{title_for(s['total'])}</b>")
     if s["donor_no"] is not None and s["donor_no"] <= FOUNDING_LIMIT:
-        lines.append(f"Badge: 🏅 <b>Founding Donor #{s['donor_no']}</b>")
+        lines.append(f"Badge: ✪ <b>Founding Donor #{s['donor_no']}</b>")
     lines.append("")
     if country:
-        lines.append(f"🏳️ Country: <b>{country_label(country)}</b>")
+        lines.append(f"◆ Country: <b>{country_label(country)}</b>")
         if s["country_pos"] is not None:
             lines.append(
-                f"🌍 Country rank: <b>#{s['country_pos']}</b> "
+                f"◆ Country rank: <b>#{s['country_pos']}</b> "
                 f"({s['country_stars']} ⭐ total)"
             )
         else:
-            lines.append("🌍 Country rank: <i>no donations yet</i>")
+            lines.append("◆ Country rank: <i>no donations yet</i>")
     else:
-        lines.append("🏳️ Country: <i>not chosen yet (pick it with your first donation)</i>")
-    lines.append(f"⭐ You donated: <b>{s['total']}</b>")
+        lines.append("◆ Country: <i>not chosen yet (pick it with your first donation)</i>")
+    lines.append(f"◆ You donated: <b>{s['total']}</b> ⭐")
     if s["pos"] is not None:
-        lines.append(f"👤 Personal rank: <b>#{s['pos']}</b>")
+        lines.append(f"◆ World rank: <b>#{s['pos']}</b>")
     else:
-        lines.append("👤 Personal rank: <i>not ranked yet — donate to join!</i>")
+        lines.append("◆ World rank: <i>not ranked yet. Donate to join.</i>")
     if s["week_pos"] is not None:
         lines.append(
-            f"📅 This week: <b>{s['week_stars']}</b> ⭐ (rank <b>#{s['week_pos']}</b>)"
+            f"◆ This week: <b>{s['week_stars']}</b> ⭐ (rank <b>#{s['week_pos']}</b>)"
         )
-    lines.append(f"👥 Friends invited: <b>{s['invited']}</b>")
-    lines += ["", f"🔗 Your invite link:\n<code>{link}</code>"]
+    lines.append(f"◆ Friends invited: <b>{s['invited']}</b>")
+    lines += ["", f"◆ Your invite link:\n<code>{link}</code>"]
 
-    rows: list[list[InlineKeyboardButton]] = [[btn("⭐ Donate", "menu:donate")]]
+    rows: list[list[InlineKeyboardButton]] = [[btn("★ Donate", "menu:donate")]]
     if country:
         share_text = f"Help {country_label(country)} reach #1 on the Country Ranking! ⭐"
         share_url = f"https://t.me/share/url?url={quote(link)}&text={quote(share_text)}"
-        rows.append([InlineKeyboardButton(text="📣 Share my country", url=share_url)])
+        rows.append([InlineKeyboardButton(text="Share my country ↗", url=share_url)])
     rows.append([btn(anon_label(s["is_anonymous"]), "anon:rank")])
     if s["total"] == 0:
-        rows.append([btn("🌍 Change country" if country else "🌍 Choose country", "country:pick")])
+        rows.append([btn("Change country" if country else "Choose country", "country:pick")])
     return "\n".join(lines), InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -360,14 +360,14 @@ async def build_donate(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
             "(it's locked afterwards)."
         )
     text = (
-        "⭐ <b>Donate Stars</b>\n\n"
+        "✦ <b>DONATE</b> ✦\n\n"
         f"{where}\n\n"
         "Pick an amount and push your country up the ranking!\n"
-        "Prefer privacy? Turn on <b>Anonymous mode</b> — others see 🕶 Anonymous "
+        "Prefer privacy? Turn on <b>Anonymous</b>: others see “Anonymous” "
         "(your country still counts)."
     )
     rows = grid([btn(f"{a} ⭐", f"don:{a}") for a in PRESETS], 2)
-    rows.append([btn("✏️ Custom Amount", "don:custom")])
+    rows.append([btn("Custom amount", "don:custom")])
     rows.append([btn(anon_label(anon), "anon:donate")])
     return text, InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -392,9 +392,9 @@ async def send_invoice(
 
 # ---------------------------------------------------------- country picker
 COUNTRY_PROMPT = (
-    "🌍 <b>Choose your country</b>\n\n"
+    "✦ <b>CHOOSE YOUR COUNTRY</b> ✦\n\n"
     "Your donations will count for it on the Country Ranking.\n"
-    "⚠️ It is <b>locked after your first donation</b>.\n\n"
+    "It is <b>locked after your first donation</b>.\n\n"
     "Pick below, or just <b>type a country name</b> to search."
 )
 
@@ -408,7 +408,7 @@ def country_kb(codes: list[str], extra: list[list[InlineKeyboardButton]]) -> Inl
 
 
 def popular_kb() -> InlineKeyboardMarkup:
-    return country_kb(list(countries.POPULAR), [[btn("🔤 All countries (A–Z)", "cp:0")]])
+    return country_kb(list(countries.POPULAR), [[btn("All countries A–Z", "cp:0")]])
 
 
 def page_kb(page: int) -> InlineKeyboardMarkup:
@@ -460,19 +460,20 @@ async def cmd_start(
             try:
                 await message.bot.send_message(
                     referrer_id,
-                    "🎉 Someone just joined WorldRichListBot with your invite link!",
+                    "✦ Someone just joined with your invite link.",
                 )
             except (TelegramForbiddenError, TelegramBadRequest):
                 pass
 
     await message.answer(
-        f"👋 Welcome, <b>{escape(user.first_name or 'friend')}</b>!\n\n"
-        "🌍 <b>WorldRichListBot</b> — which country is the richest in Telegram "
-        "Stars? Donate for <b>your country</b> and push it to #1!\n\n"
-        "🏆 Country Ranking & Top Donors\n"
-        "⭐ Donate Stars for your country\n"
-        "👤 Track your rank, title and badges\n\n"
-        "🚀 Tap <b>Open App</b> for the full experience, or use the buttons below 👇",
+        f"Welcome, <b>{escape(user.first_name or 'friend')}</b>.\n\n"
+        "✦ <b>THE WORLD RICH LIST</b> ✦\n"
+        "<i>Which country is the richest in Telegram Stars?</i>\n"
+        "──────────────\n"
+        "◆ Rankings: world, country, region\n"
+        "◆ Stars and friends, weekly battles\n"
+        "◆ Titles and badges\n\n"
+        "Tap <b>◆ Open App</b> for the full experience.",
         reply_markup=main_menu(),
     )
 
@@ -480,11 +481,11 @@ async def cmd_start(
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     await message.answer(
-        "ℹ️ <b>Help</b>\n\n"
-        "• 🏆 <b>Global Leaderboard</b> — Country Ranking and Top Donors "
+        "✦ <b>HELP</b> ✦\n\n"
+        "◆ <b>♛ Rich List</b>: country ranking and top donors "
         "(all time / this week)\n"
-        "• ⭐ <b>Donate Stars</b> — pick an amount or enter your own\n"
-        "• 👤 <b>My Rank</b> — your stats, title, invite link\n\n"
+        "◆ <b>★ Donate</b>: pick an amount or enter your own\n"
+        "◆ <b>◈ My Standing</b>: your stats, title, invite link\n\n"
         "Your country is chosen with your first donation and then locked.\n"
         "Payments use Telegram Stars only. Payment problems? Send /paysupport.",
         reply_markup=main_menu(),
@@ -498,11 +499,11 @@ async def cmd_app(message: Message) -> None:
         return
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Open App", web_app=WebAppInfo(url=WEBAPP_URL))]
+            [InlineKeyboardButton(text="◆ Open App", web_app=WebAppInfo(url=WEBAPP_URL))]
         ]
     )
     await message.answer(
-        "🌍 Open the app to see the Country Ranking and donate for your country.",
+        "Open the app to see the rankings and donate for your country.",
         reply_markup=kb,
     )
 
@@ -510,7 +511,7 @@ async def cmd_app(message: Message) -> None:
 @router.message(Command("paysupport"))
 async def cmd_paysupport(message: Message) -> None:
     await message.answer(
-        "💬 <b>Payment support</b>\n\n"
+        "✦ <b>PAYMENT SUPPORT</b> ✦\n\n"
         "Donations are non-refundable: they buy you a rank and badges.\n\n"
         "The only exceptions are errors, for example a payment charged twice or "
         "not credited. In that case describe the problem and include the time "
@@ -743,9 +744,9 @@ async def notify_passed(
     )
     for r in recipients:
         text = (
-            f"⚠️ {country_label(passer)} just overtook "
+            f"◆ {country_label(passer)} just overtook "
             f"{country_label(r['country_code'])} on the Country Ranking!\n\n"
-            f"Take the lead back 👉 tap ⭐ <b>Donate Stars</b>"
+            f"Take the lead back: tap <b>★ Donate</b>."
         )
         try:
             await bot.send_message(r["user_id"], text)
@@ -780,7 +781,7 @@ async def on_successful_payment(message: Message) -> None:
             payment.telegram_payment_charge_id,
         )
         await message.answer(
-            "✅ Your payment was received, but we couldn't update the leaderboard "
+            "Your payment was received, but we couldn't update the leaderboard "
             "right now. It will be credited shortly — thank you!"
         )
         return
@@ -790,36 +791,36 @@ async def on_successful_payment(message: Message) -> None:
         return
 
     country = result["country"]
-    lines = [f"🎉 <b>Thank you for donating {payment.total_amount} ⭐!</b>", ""]
+    lines = [f"✦ <b>Thank you: {payment.total_amount} ⭐ received</b>", "──────────────", ""]
 
     if country:
         o, n = result["old_country_pos"], result["new_country_pos"]
         c = country_label(country)
         if o is None:
-            lines.append(f"🌍 {c} entered the Country Ranking at <b>#{n}</b>!")
+            lines.append(f"◆ {c} entered the Country Ranking at <b>#{n}</b>.")
         elif n < o:
-            lines.append(f"🚀 {c} climbed from <b>#{o}</b> to <b>#{n}</b>!")
+            lines.append(f"◆ {c} climbed from <b>#{o}</b> to <b>#{n}</b>.")
         else:
-            lines.append(f"💪 {c} holds <b>#{n}</b>.")
+            lines.append(f"◆ {c} holds <b>#{n}</b>.")
         if n == 1:
-            lines.append(f"👑 <b>{c} is #1 in the world right now!</b>")
+            lines.append(f"♛ <b>{c} is #1 in the world right now.</b>")
 
     old_pos, new_pos = result["old_pos"], result["new_pos"]
     if old_pos is None:
-        lines.append(f"🏆 You entered the Top Donors at <b>#{new_pos}</b>!")
+        lines.append(f"◆ You entered the Top Donors at <b>#{new_pos}</b>.")
     elif new_pos < old_pos:
-        lines.append(f"📈 You climbed from <b>#{old_pos}</b> to <b>#{new_pos}</b> in Top Donors!")
+        lines.append(f"◆ You climbed from <b>#{old_pos}</b> to <b>#{new_pos}</b> in Top Donors.")
     else:
-        lines.append(f"💪 You're holding <b>#{new_pos}</b> in Top Donors.")
+        lines.append(f"◆ You're holding <b>#{new_pos}</b> in Top Donors.")
 
     lines += [
         "",
-        f"⭐ You donated in total: <b>{result['new_total']}</b>",
+        f"You donated in total: <b>{result['new_total']}</b> ⭐",
         f"Title: <b>{title_for(result['new_total'])}</b>",
     ]
     if result["is_first_donation"] and result["donor_no"] <= FOUNDING_LIMIT:
         lines.append(
-            f"🏅 You earned the <b>Founding Donor #{result['donor_no']}</b> badge!"
+            f"✪ You earned the <b>Founding Donor #{result['donor_no']}</b> badge."
         )
     await message.answer("\n".join(lines), reply_markup=main_menu())
 
@@ -834,7 +835,7 @@ async def on_successful_payment(message: Message) -> None:
 # ------------------------------------------------------------------ fallback
 @router.message(F.text)
 async def fallback(message: Message) -> None:
-    await message.answer("Please choose an option below 👇", reply_markup=main_menu())
+    await message.answer("Please choose an option below.", reply_markup=main_menu())
 
 
 # ----------------------------------------------------- hosting helpers (Render)
@@ -905,14 +906,14 @@ async def weekly_winner_loop(bot: Bot) -> None:
                     win = b["last"][0]
                     code = win["place"]
                     text = (
-                        f"🏆 <b>{country_label(code)}</b> won last week's battle with "
+                        f"✦ <b>{country_label(code)}</b> won last week's battle with "
                         f"<b>{win['value']} ⭐</b>!\n\nA new week just started. "
                         f"Defend the title and invite friends."
                     )
                     kb = None
                     if WEBAPP_URL:
                         kb = InlineKeyboardMarkup(inline_keyboard=[[
-                            InlineKeyboardButton(text="🚀 Open the app", web_app=WebAppInfo(url=WEBAPP_URL))
+                            InlineKeyboardButton(text="◆ Open the app", web_app=WebAppInfo(url=WEBAPP_URL))
                         ]])
                     for uid in await asyncio.to_thread(db.audience_of_country, code, 500):
                         try:
@@ -952,7 +953,7 @@ async def main() -> None:
     if WEBAPP_URL:
         try:
             await bot.set_chat_menu_button(
-                menu_button=MenuButtonWebApp(text="🚀 Open", web_app=WebAppInfo(url=WEBAPP_URL))
+                menu_button=MenuButtonWebApp(text="◆ Open", web_app=WebAppInfo(url=WEBAPP_URL))
             )
         except Exception:
             log.exception("Could not set the menu button")

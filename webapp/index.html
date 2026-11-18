@@ -7,20 +7,21 @@
 <title>World Rich List</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
-  --ink:#12163A;      /* night sky */
-  --panel:#1B2052;    /* surfaces */
-  --panel2:#252B6B;   /* raised surfaces */
-  --line:#2E3578;     /* dividers */
-  --chalk:#F2F0FF;    /* primary text */
-  --mist:#9AA0D6;     /* secondary text */
-  --gold:#FFC53D;     /* Stars */
-  --you:#62E0B4;      /* "yours" */
-  --bad:#FF6B8A;
-  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --ink:#0A0907;
+  --panel:#14110D;
+  --panel2:#1E1913;
+  --line:#2C2519;
+  --chalk:#F3EBDA;
+  --mist:#A79B83;
+  --gold:#D9B76A;
+  --foil:linear-gradient(135deg,#F6E3A6 0%,#D9B76A 45%,#A67C2E 100%);
+  --you:#7FD8B5;
+  --bad:#E07A8F;
+  --display:"Bodoni Moda","Playfair Display",Georgia,serif;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -32,15 +33,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .num{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
 
 /* ---------- layout ---------- */
-#app{min-height:100vh;padding:0 16px calc(110px + var(--safe-b));background:radial-gradient(120% 40% at 50% -6%,rgba(255,197,61,.13),transparent 60%)}
+#app{min-height:100vh;padding:0 16px calc(110px + var(--safe-b));background:radial-gradient(120% 40% at 50% -6%,rgba(217,183,106,.13),transparent 60%)}
 header{padding:18px 0 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-h1{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2}
-.sub{color:var(--mist);font-size:13px;margin-top:4px;max-width:24ch}
-.seg{display:inline-flex;background:var(--panel);border-radius:12px;padding:3px;flex:none}
+h1{font-family:var(--display);font-weight:500;font-size:30px;line-height:1.1;letter-spacing:-.01em}
+.sub{color:var(--mist);font-size:13px;margin-top:6px;max-width:26ch}
+header{border-bottom:1px solid var(--line);margin-bottom:14px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;flex:none}
 .seg button{padding:8px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--mist);min-height:36px}
 .seg.lang button{padding:6px 8px;min-height:30px;font-size:12px}
 header .seg.lang{margin-top:2px}
-.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--chalk)}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--gold);box-shadow:inset 0 0 0 1px rgba(217,183,106,.45)}
 
 /* ---------- flags ---------- */
 .flag{display:inline-block;width:30px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;
@@ -54,12 +56,13 @@ header .seg.lang{margin-top:2px}
 .pod{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
 .pod .who{margin-top:8px;font-weight:700;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pod .amt{font-size:12px;color:var(--mist);margin:1px 0 8px}
-.pod .amt b{color:var(--gold);font-family:var(--display);font-weight:700}
-.bar{width:100%;border-radius:12px 12px 4px 4px;background:var(--panel2);display:flex;align-items:flex-start;justify-content:center;
+.pod .amt b{color:var(--gold);font-family:var(--display);font-weight:700;font-size:14px}
+.bar{width:100%;border-radius:10px 10px 3px 3px;background:linear-gradient(180deg,#241E15,#14110D);border:1px solid var(--line);border-bottom:0;display:flex;align-items:flex-start;justify-content:center;
   padding-top:10px;transform-origin:bottom}
-.bar .num{font-size:26px;color:var(--mist)}
-.pod.first .bar{background:linear-gradient(180deg,#FFD870,var(--gold));box-shadow:0 0 36px rgba(255,197,61,.35)}
-.pod.first .bar .num{color:var(--ink);font-size:34px}
+.bar .num{font-size:28px;color:var(--mist);font-weight:500}
+.pod.first .bar{background:var(--foil);box-shadow:0 0 42px rgba(217,183,106,.28)}
+.pod.first .bar .num{color:var(--ink);font-size:38px;font-weight:700}
+.pod.first::before{content:"♛";color:var(--gold);font-size:20px;line-height:1;margin-bottom:4px}
 .pod.mine .who{color:var(--you)}
 .pod.open .flag-slot{width:54px;height:36px;border:2px dashed var(--line);border-radius:6px}
 .pod.open .who{color:var(--mist);font-weight:500}
@@ -70,45 +73,46 @@ header .seg.lang{margin-top:2px}
 @keyframes rise{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
 
 /* ---------- strips & rows ---------- */
-.strip{border:1.5px solid var(--you);border-radius:16px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
-.strip .t{font-weight:700}
+.strip{border:1px solid rgba(127,216,181,.55);background:linear-gradient(90deg,rgba(127,216,181,.07),transparent);border-radius:16px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.strip .t{font-family:var(--display);font-weight:500;font-size:16px}
 .strip .d{color:var(--mist);font-size:13px;margin-top:2px}
 .strip .flag{width:40px;height:27px}
 .strip.cta{border-style:dashed;border-color:var(--line)}
 .list{display:flex;flex-direction:column}
 .row{position:relative;display:grid;grid-template-columns:28px 36px 1fr auto;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .row:first-child{border-top:0}
-.row .pos{font-family:var(--display);font-weight:500;font-size:13px;color:var(--mist);text-align:center}
+.row .pos{font-family:var(--display);font-weight:500;font-size:20px;color:var(--gold);text-align:center}
 .row .name{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .meta{font-size:12px;color:var(--mist);font-weight:500}
-.row .stars{font-family:var(--display);font-weight:700;font-size:14px;color:var(--gold);text-align:right;white-space:nowrap}
-.row .fill{grid-column:2/-1;height:4px;border-radius:2px;background:var(--panel);overflow:hidden;margin-top:-2px}
-.row .fill i{display:block;height:100%;background:var(--line);border-radius:2px}
+.row .stars{font-family:var(--display);font-weight:700;font-size:16px;color:var(--gold);text-align:right;white-space:nowrap}
+.row .fill{grid-column:2/-1;height:2px;border-radius:1px;background:var(--panel);overflow:hidden;margin-top:-2px}
+.row .fill i{display:block;height:100%;background:rgba(217,183,106,.35);border-radius:1px}
 .row.mine .name{color:var(--you)}
 .row.mine .fill i{background:var(--you)}
 .row.sample{opacity:.75}
 .row.sample .pos{font-size:16px}
-.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:16px;color:var(--gold);border:1px solid rgba(217,183,106,.45)}
 .tag{display:inline-block;font-size:11px;font-weight:600;color:var(--mist);border:1px dashed var(--line);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:1px}
 .empty{padding:28px 8px;text-align:center;color:var(--mist)}
 .empty b{display:block;color:var(--chalk);font-size:16px;margin-bottom:4px}
 
 /* ---------- me ---------- */
-.card{background:var(--panel);border-radius:18px;padding:16px;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
 .hello{display:flex;align-items:center;gap:12px}
 .hello .avatar{width:48px;height:48px;font-size:18px}
-.hello .t{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.2}
+.hello .t{font-family:var(--display);font-weight:500;font-size:21px;line-height:1.2}
 .hello .d{color:var(--mist);font-size:13px;margin-top:2px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
 .trio div{background:var(--ink);border-radius:12px;padding:12px 8px;text-align:center}
-.trio .num{display:block;font-size:20px}
+.trio .num{display:block;font-size:24px;font-weight:500}
 .trio span.l{display:block;font-size:11.5px;color:var(--mist);margin-top:2px}
 .trio .gold{color:var(--gold)}
-h2{font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:6px}
+h2{font-family:var(--display);font-weight:500;font-size:19px;margin-bottom:6px}
 .card p{color:var(--mist);font-size:13.5px}
 .btns{display:flex;gap:8px;margin-top:12px}
 .btn{flex:1;min-height:46px;border-radius:12px;background:var(--panel2);font-weight:700;padding:0 14px}
-.btn.gold{background:var(--gold);color:var(--ink)}
+.btn.gold{background:var(--foil);color:var(--ink);border:0}
+.btn{border:1px solid var(--line)}
 .btn:disabled{opacity:.5}
 .setting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .setting:first-of-type{border-top:0}
@@ -123,40 +127,40 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
   display:grid;place-items:center;font-family:var(--display);font-size:12px;color:var(--gold)}
 
 /* ---------- bottom bars ---------- */
-.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--ink) 55%,rgba(18,22,58,0));padding:26px 14px calc(8px + var(--safe-b));z-index:5}
+.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--ink) 55%,rgba(10,9,7,0));padding:26px 14px calc(8px + var(--safe-b));z-index:5}
 .donate{width:100%;min-height:54px;border-radius:16px;background:var(--gold);color:var(--ink);font-weight:700;font-size:16px;
   display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
 .donate .flag{width:26px;height:17px}
-.tabs{display:grid;grid-template-columns:1fr 1fr 78px 1fr;align-items:end;background:rgba(27,32,82,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:22px;padding:5px 6px;box-shadow:0 10px 30px rgba(4,6,24,.55)}
+.tabs{display:grid;grid-template-columns:1fr 1fr 78px 1fr;align-items:end;background:rgba(20,17,13,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:22px;padding:5px 6px;box-shadow:0 10px 30px rgba(4,6,24,.55)}
 .tabs button:not(.fab){display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border-radius:14px;color:var(--mist);font-size:12px;font-weight:600;min-height:52px}
 .tabs button:not(.fab) svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.tabs button:not(.fab)[aria-selected="true"]{color:var(--gold);background:rgba(37,43,107,.9)}
+.tabs button:not(.fab)[aria-selected="true"]{color:var(--gold);background:rgba(30,25,19,.95)}
 
 /* ---------- sheet ---------- */
-.backdrop{position:fixed;inset:0;background:rgba(6,8,28,.65);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.backdrop{position:fixed;inset:0;background:rgba(4,3,2,.72);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
 .backdrop.open{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;background:var(--panel);border-radius:24px 24px 0 0;
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;background:var(--panel);border-top:1px solid rgba(217,183,106,.4);border-radius:24px 24px 0 0;
   padding:10px 16px calc(18px + var(--safe-b));max-height:90vh;overflow:auto;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
 .sheet.open{transform:none}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
-.sheet h2{font-size:18px;margin-bottom:4px}
+.sheet h2{font-size:24px;margin-bottom:4px}
 .sheet .lead{color:var(--mist);font-size:13.5px;margin-bottom:14px}
 .search{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--ink);color:var(--chalk);padding:0 14px;font:inherit;margin-bottom:10px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
 .chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;background:var(--panel2);font-weight:600;font-size:14px}
-.chip[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--foil);color:var(--ink)}
 .picklist{max-height:42vh;overflow:auto;margin:6px -4px 0}
 .pick{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 4px;text-align:left;border-radius:10px;font-weight:600}
 .pick:active{background:var(--panel2)}
 .amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .amounts button{min-height:54px;border-radius:14px;background:var(--panel2);font-family:var(--display);font-weight:700;font-size:16px}
-.amounts button[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.amounts button[aria-pressed="true"]{background:var(--foil);color:var(--ink)}
 .amounts button:last-child:nth-child(3n+2){grid-column:span 2}
 .custom{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .custom input{flex:1}
 .custom .search{margin:0}
 .done{text-align:center;padding:12px 0 6px}
-.done .big{font-size:44px;margin-bottom:6px}
+.done .big{font-size:48px;margin-bottom:6px;color:var(--gold);font-family:var(--display)}
 .err{color:var(--bad);font-size:13px;min-height:18px;margin:4px 0}
 .toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-80px);background:var(--panel2);color:var(--chalk);padding:12px 16px;border-radius:12px;
   z-index:30;max-width:90vw;font-weight:600;font-size:14px;transition:transform .25s;box-shadow:0 6px 24px rgba(0,0,0,.35)}
@@ -178,7 +182,7 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .ranks .lab small{display:block;color:var(--mist);font-size:11.5px;font-weight:500}
 .cell{display:block;width:100%;min-height:46px;border-radius:12px;background:var(--ink);font-family:var(--display);font-weight:700;font-size:15px}
 .cell.none{color:var(--line);font-family:inherit;font-weight:600;font-size:12.5px;color:var(--mist)}
-.cell.top{background:var(--gold);color:var(--ink)}
+.cell.top{background:var(--foil);color:var(--ink)}
 .cell.ok{color:var(--you)}
 .cell + .cell{margin-left:6px}
 .ranks td+td{padding-left:6px}
@@ -186,21 +190,21 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .loc{display:flex;align-items:center;gap:8px}
 
 .fab{position:relative;top:-18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding-top:2px;width:64px;height:64px;margin:0 auto;border-radius:50%;
-  background:linear-gradient(160deg,#FFD870,var(--gold) 55%,#F0A91E);color:var(--ink);box-shadow:0 8px 22px rgba(255,197,61,.45),0 0 0 5px var(--ink)}
+  background:var(--foil);color:var(--ink);box-shadow:0 8px 22px rgba(217,183,106,.45),0 0 0 5px var(--ink)}
 .fab span{font-size:22px;line-height:1;margin-bottom:1px}.fab em{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.01em}
 .fab:active{transform:scale(.95)}
 .row.mine{background:linear-gradient(90deg,rgba(98,224,180,.12),transparent);border-radius:12px;margin:0 -8px;padding-left:8px;padding-right:8px}
-.battle{background:linear-gradient(135deg,#2A2F7E,#1B2052 70%);border:1px solid var(--line);border-radius:20px;padding:14px 14px 12px;margin-bottom:16px}
+.battle{background:linear-gradient(145deg,#1E1913,#0F0D09 70%);border:1px solid rgba(217,183,106,.35);border-radius:18px;padding:14px 14px 12px;margin-bottom:16px}
 .battle .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .battle h2{margin:0;font-size:15px}
-.timer{font-size:12px;font-weight:700;color:var(--ink);background:var(--gold);border-radius:999px;padding:4px 10px}
+.timer{font-size:12px;font-weight:700;color:var(--gold);border:1px solid rgba(217,183,106,.5);border-radius:999px;padding:3px 10px}
 .battle .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.battle .mini>div{background:rgba(18,22,58,.6);border-radius:12px;padding:10px 6px;text-align:center;min-width:0}
+.battle .mini>div{background:rgba(10,9,7,.6);border-radius:12px;padding:10px 6px;text-align:center;min-width:0}
 .battle .mini .n{font-size:12px;font-weight:700;margin-top:4px;line-height:1.25;min-height:30px}
 .battle .mini .v{font-size:11.5px;color:var(--gold);font-weight:700}
 .battle .last{margin-top:10px;font-size:12.5px;color:var(--mist)}
 .battle .last b{color:var(--chalk)}
-.challenge{margin-top:8px;width:100%;min-height:42px;border-radius:12px;background:rgba(255,197,61,.14);color:var(--gold);font-weight:700;font-size:13.5px}
+.challenge{margin-top:8px;width:100%;min-height:42px;border-radius:12px;background:rgba(217,183,106,.14);color:var(--gold);font-weight:700;font-size:13.5px}
 .live{margin-top:22px}
 .live h2{display:flex;align-items:center;gap:8px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--you);box-shadow:0 0 0 0 rgba(98,224,180,.6);animation:pulse 1.8s infinite}
@@ -210,17 +214,17 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .ev b{color:var(--gold)}
 .badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .badge{background:var(--ink);border-radius:14px;padding:12px 6px 10px;text-align:center}
-.badge i{display:block;font-style:normal;font-size:26px;line-height:1.1}
+.badge i{display:block;font-style:normal;font-size:24px;line-height:1.1;color:var(--gold);font-family:var(--display)}
 .badge span{display:block;font-size:11.5px;font-weight:700;margin-top:4px}
 .badge small{display:block;font-size:10.5px;color:var(--mist);margin-top:1px}
 .badge.off{opacity:.38;filter:grayscale(1)}
-.badge.on{box-shadow:inset 0 0 0 1.5px rgba(255,197,61,.55)}
+.badge.on{box-shadow:inset 0 0 0 1.5px rgba(217,183,106,.55)}
 .trial{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin-bottom:10px;padding:0 14px;border-radius:14px;border:1.5px dashed var(--gold);color:var(--gold);font-weight:700;text-align:left}
 .trial small{display:block;color:var(--mist);font-weight:500;font-size:12px}
-.trial[aria-pressed="true"]{background:var(--gold);color:var(--ink)}.trial[aria-pressed="true"] small{color:var(--ink)}
+.trial[aria-pressed="true"]{background:var(--foil);color:var(--ink)}.trial[aria-pressed="true"] small{color:var(--ink)}
 .dots{display:flex;gap:6px;justify-content:center;margin:14px 0}
 .dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--gold);width:22px;border-radius:4px}
-.intro{text-align:center;padding:6px 0}.intro .big{font-size:52px;margin-bottom:6px}.intro .trust{font-size:12px;color:var(--mist);margin-top:10px}
+.intro{text-align:center;padding:6px 0}.intro .big{font-size:56px;margin-bottom:6px;color:var(--gold);font-family:var(--display);line-height:1.1}.intro .trust{font-size:12px;color:var(--mist);margin-top:10px}
 .confetti{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:40;pointer-events:none;animation:fall 1.8s ease-in forwards}
 @keyframes fall{to{transform:translate(var(--dx),105vh) rotate(var(--r));opacity:.9}}
 </style>
@@ -231,7 +235,7 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" data-tab="p" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg><span data-i18n="Places">Places</span></button>
     <button role="tab" data-tab="pe" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3 3 0 010 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg><span data-i18n="People">People</span></button>
-    <button class="fab" id="donateBtn" data-act="open-donate" aria-label="Donate Stars"><span>⭐</span><em data-i18n="Donate">Donate</em></button>
+    <button class="fab" id="donateBtn" data-act="open-donate" aria-label="Donate Stars"><span>★</span><em data-i18n="Donate">Donate</em></button>
     <button role="tab" data-tab="me" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-3.6 3.5-5.6 7.5-5.6s6.9 2 7.5 5.6"/></svg><span data-i18n="Me">Me</span></button>
   </nav>
 </div>
@@ -262,7 +266,7 @@ const fmt = (n) => Number(n).toLocaleString("en-US").replace(/,/g, " ");
 const okCode = (c) => /^[A-Z]{2}$/.test(c || "");
 const cname = (c) => (S.byCode[c] || c || "");
 const rname = (k) => (S.regName[k] || k || "");
-const unit = () => (S.metric === "stars" ? "⭐" : "👥");
+const unit = () => (S.metric === "stars" ? "★" : "✚");
 const val = (v) => `${fmt(v)} ${unit()}`;
 const hasRegions = (cc) => !!(cc && S.regions[cc] && S.regions[cc].length);
 const emojiFlag = (c) => String.fromCodePoint(...[...c].map((ch) => 0x1F1E6 + ch.charCodeAt(0) - 65));
@@ -283,8 +287,8 @@ document.addEventListener("error", (e) => {
 const hue = (s) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
 function avatar(name, anon) {
   const clean = String(name).replace(/^@/, "");
-  const ch = anon ? "🕶" : (clean[0] || "?").toUpperCase();
-  return `<div class="avatar" style="background:hsl(${hue(clean)} 48% 42%)">${esc(ch)}</div>`;
+  const ch = anon ? "◌" : (clean[0] || "?").toUpperCase();
+  return `<div class="avatar" style="background:hsl(${30 + hue(clean) % 24} 28% 14%)">${esc(ch)}</div>`;
 }
 const haptic = (t) => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || "light"); } catch (_) {} };
 let toastTimer;
@@ -300,7 +304,7 @@ uz: {
 "Pick your region":"Viloyatingni tanla","Join the {c} regional race.":"{c} viloyatlar poygasiga qo'shil.",
 "No Stars yet. Be the first for {x}.":"Hali Stars yo'q. {x} uchun birinchi bo'l.","No friends yet. Invite someone from {x}.":"Hali do'st yo'q. {x}dan kimnidir taklif qil.",
 "You lead the ranking. Keep your lead.":"Reytingda birinchisan. O'rningni saqla.","Keep going to climb.":"Yuqoriga chiqish uchun davom et.","Not ranked yet":"Hali reytingda yo'q",
-"{n} ⭐ more to pass {x}":"{x}dan o'tish uchun yana {n} ⭐","{n} more friends to pass {x}":"{x}dan o'tish uchun yana {n} do'st",
+"{n} ★ more to pass {x}":"{x}dan o'tish uchun yana {n} ★","{n} more friends to pass {x}":"{x}dan o'tish uchun yana {n} do'st",
 "Challenge friends to pass {x}":"Do'stlarni {x}dan o'tishga chaqir","Share {x}'s lead":"{x} yetakchiligini ulash","{x} leads the World Rich List! Come and join the race.":"{x} World Rich List'da yetakchi! Poygaga qo'shil.",
 "Invite friends for {x}":"{x} uchun do'stlarni chaqir","Help {x} get on the World Rich List!":"{x}ni World Rich List'ga chiqarishga yordam ber!",
 "Demo country":"Namuna davlat","sample":"namuna","Not a real country. Beat it to take #1.":"Haqiqiy davlat emas. Uni ortda qoldirib #1 bo'l.",
@@ -316,19 +320,19 @@ uz: {
 "Share":"Ulashish","Copy link":"Havolani nusxalash","Hide my name":"Ismimni yashirish","Others see “Anonymous”. Your place still counts.":"Boshqalar “Anonymous” ko'radi. O'ring baribir hisoblanadi.",
 "How it works":"Qanday ishlaydi","Pick your country, and your region if it's listed.":"Davlatingni, ro'yxatda bo'lsa viloyatingni tanla.","Donate Stars or invite friends.":"Stars yubor yoki do'stlarni taklif qil.","You climb the lists for the world, your country and your region.":"Dunyo, davlat va viloyat ro'yxatlarida yuqoriga chiqasan.",
 "Country":"Davlat","Locked after your first donation":"Birinchi donatdan keyin qulflanadi","You can change it until you donate":"Donat qilgunga qadar o'zgartirish mumkin","Change":"O'zgartirish","Choose it to join the rankings":"Reytinglarga qo'shilish uchun tanla","Region":"Viloyat","Optional. Adds you to your regional ranking":"Ixtiyoriy. Viloyat reytingiga qo'shadi",
-"First Star":"Birinchi Star","Donate once":"Bir marta donat qil","Founding Donor":"Asoschi donatchi","One of the first 50":"Dastlabki 50 tadan biri","Region #1":"Viloyat #1","Lead your region":"Viloyatingda yetakchi bo'l","Country #1":"Davlat #1","Lead your country":"Davlatingda yetakchi bo'l","World top 10":"Dunyo top 10","Reach the world top":"Dunyo topiga chiq","Connector":"Bog'lovchi","Invite 3 friends":"3 do'st taklif qil","Big Fish":"Katta baliq","Donate 500 ⭐":"500 ⭐ donat qil","Rally":"Yurish","Invite 10 friends":"10 do'st taklif qil","Low profile":"Sokin","Hide your name":"Ismingni yashir",
+"First Star":"Birinchi Star","Donate once":"Bir marta donat qil","Founding Donor":"Asoschi donatchi","One of the first 50":"Dastlabki 50 tadan biri","Region #1":"Viloyat #1","Lead your region":"Viloyatingda yetakchi bo'l","Country #1":"Davlat #1","Lead your country":"Davlatingda yetakchi bo'l","World top 10":"Dunyo top 10","Reach the world top":"Dunyo topiga chiq","Connector":"Bog'lovchi","Invite 3 friends":"3 do'st taklif qil","Big Fish":"Katta baliq","Donate 500 ★":"500 ★ donat qil","Rally":"Yurish","Invite 10 friends":"10 do'st taklif qil","Low profile":"Sokin","Hide your name":"Ismingni yashir",
 "Badges":"Nishonlar","Earned from real activity. No donation needed for most of them.":"Haqiqiy faollik uchun beriladi. Ko'pchiligi uchun donat shart emas.",
 "{me} is only {n} {u} behind {r} on the World Rich List! Join the race, it's free to look and pick a side.":"{me} World Rich List'da {r}dan atigi {n} {u} ortda! Poygaga qo'shil, ko'rish bepul, tomonni tanla.","friends":"do'st",
 "Weekly battle":"Haftalik jang","ends in {x}":"{x}dan keyin tugaydi","Open":"Bo'sh","Last week's winner:":"O'tgan hafta g'olibi:","region":"viloyat","Last week: no winner yet. Be the first.":"O'tgan hafta: g'olib yo'q. Birinchi bo'l.",
-"Live":"Jonli","{n} sent {a} ⭐ for {w}":"{n} {w} uchun {a} ⭐ yubordi","now":"hozir",
+"Live":"Jonli","{n} sent {a} ★ for {w}":"{n} {w} uchun {a} ★ yubordi","now":"hozir",
 "Places":"Joylar","People":"Odamlar","Me":"Men","Countries and regions, ranked":"Davlatlar va viloyatlar reytingi","Who leads, near and far":"Yaqin va uzoqda kim yetakchi","Ranking by":"Reyting mezoni","All time":"Hammasi","Week":"Hafta","Period":"Davr","Countries":"Davlatlar","Level":"Daraja","Area":"Hudud",
 "Choose your country":"Davlatingni tanla","Your Stars and friends count for it. It's locked after your first donation.":"Stars va do'stlaring shu davlat uchun hisoblanadi. Birinchi donatdan keyin qulflanadi.","Search countries":"Davlat qidirish","No country found.":"Davlat topilmadi.",
 "Choose your region":"Viloyatingni tanla","Appear in the {c} regional ranking. It's locked after your first donation.":"{c} viloyat reytingida chiq. Birinchi donatdan keyin qulflanadi.","Search regions":"Viloyat qidirish","No region found.":"Viloyat topilmadi.","Skip for now":"Hozircha o'tkazib yubor",
-"Thank you!":"Rahmat!","{n} ⭐ added to {p}. The ranking updates in a moment.":"{n} ⭐ {p} ga qo'shildi. Reyting biroz vaqtda yangilanadi.","Tell your friends":"Do'stlarga ayt","Back to ranking":"Reytingga qaytish",
-"Donate for {p}":"{p} uchun donat","Choose how many Stars to send.":"Qancha Stars yuborishni tanla.","Other amount":"Boshqa summa","Others see “Anonymous”":"Boshqalar “Anonymous” ko'radi","Opening payment…":"To'lov ochilmoqda…","Donate {n} ⭐":"{n} ⭐ donat qilish",
+"Thank you!":"Rahmat!","{n} ★ added to {p}. The ranking updates in a moment.":"{n} ★ {p} ga qo'shildi. Reyting biroz vaqtda yangilanadi.","Tell your friends":"Do'stlarga ayt","Back to ranking":"Reytingga qaytish",
+"Donate for {p}":"{p} uchun donat","Choose how many Stars to send.":"Qancha Stars yuborishni tanla.","Other amount":"Boshqa summa","Others see “Anonymous”":"Boshqalar “Anonymous” ko'radi","Opening payment…":"To'lov ochilmoqda…","Donate {n} ★":"{n} ★ donat qilish",
 "Enter an amount from {a} to {b} Stars.":"{a} dan {b} gacha Stars kiriting.","The payment didn't go through. Try again.":"To'lov o'tmadi. Qayta urinib ko'ring.","Link copied":"Havola nusxalandi",
 "Open this app from Telegram":"Bu ilovani Telegram'dan oching","Find @WorldRichListBot and tap “Open App”.":"@WorldRichListBot'ni toping va “Open App” ni bosing.","Couldn't load":"Yuklanmadi",
-"Donations are non-refundable.":"Donat qaytarilmaydi.","Notifications":"Bildirishnomalar","Rank changes and weekly winners":"O'rin o'zgarishi va haftalik g'olib","Try 1 ⭐":"1 ⭐ sinab ko'r","A tiny first step. It still counts.":"Kichik birinchi qadam. U ham hisoblanadi.",
+"Donations are non-refundable.":"Donat qaytarilmaydi.","Notifications":"Bildirishnomalar","Rank changes and weekly winners":"O'rin o'zgarishi va haftalik g'olib","Try 1 ★":"1 ★ sinab ko'r","A tiny first step. It still counts.":"Kichik birinchi qadam. U ham hisoblanadi.",
 "Welcome":"Xush kelibsiz","Pick your side":"Tomoningni tanla","Choose your country. Your Stars and friends will push it up the ranking.":"Davlatingni tanla. Stars va do'stlaring uni reytingda ko'taradi.","Invite and share":"Taklif qil va ulash","Friends who join and pick a country raise your place. No donation needed.":"Qo'shilib davlat tanlagan do'stlar o'ringni ko'taradi. Donat shart emas.","Win your corner":"O'z hududingda yeng","You may not top the world, but you can lead your country or region.":"Dunyoda birinchi bo'lmasang ham, davlat yoki viloyatingda yetakchi bo'la olasan.","Next":"Keyingi","Let's go":"Boshladik",
 "Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.":"Stars bot egasiga tushadi. Ular senga o'rin va nishon beradi, boshqa hech narsa emas. Donat qaytarilmaydi."
 },
@@ -337,7 +341,7 @@ ru: {
 "Pick your region":"Выбери регион","Join the {c} regional race.":"Присоединяйся к гонке регионов: {c}.",
 "No Stars yet. Be the first for {x}.":"Пока нет Stars. Стань первым для {x}.","No friends yet. Invite someone from {x}.":"Пока нет друзей. Пригласи кого-нибудь из {x}.",
 "You lead the ranking. Keep your lead.":"Ты лидируешь. Удержи позицию.","Keep going to climb.":"Продолжай, чтобы подняться.","Not ranked yet":"Пока не в рейтинге",
-"{n} ⭐ more to pass {x}":"Ещё {n} ⭐, чтобы обойти {x}","{n} more friends to pass {x}":"Ещё {n} друзей, чтобы обойти {x}",
+"{n} ★ more to pass {x}":"Ещё {n} ★, чтобы обойти {x}","{n} more friends to pass {x}":"Ещё {n} друзей, чтобы обойти {x}",
 "Challenge friends to pass {x}":"Позови друзей обойти {x}","Share {x}'s lead":"Поделиться лидерством {x}","{x} leads the World Rich List! Come and join the race.":"{x} лидирует в World Rich List! Присоединяйся к гонке.",
 "Invite friends for {x}":"Пригласить друзей за {x}","Help {x} get on the World Rich List!":"Помоги {x} попасть в World Rich List!",
 "Demo country":"Пример страны","sample":"пример","Not a real country. Beat it to take #1.":"Не настоящая страна. Обгони её и займи #1.",
@@ -353,19 +357,19 @@ ru: {
 "Share":"Поделиться","Copy link":"Копировать ссылку","Hide my name":"Скрыть моё имя","Others see “Anonymous”. Your place still counts.":"Другие видят «Anonymous». Твоё место всё равно считается.",
 "How it works":"Как это работает","Pick your country, and your region if it's listed.":"Выбери страну и, если есть в списке, регион.","Donate Stars or invite friends.":"Отправляй Stars или приглашай друзей.","You climb the lists for the world, your country and your region.":"Ты поднимаешься в списках мира, страны и региона.",
 "Country":"Страна","Locked after your first donation":"Блокируется после первого доната","You can change it until you donate":"Можно менять до первого доната","Change":"Изменить","Choose it to join the rankings":"Выбери, чтобы попасть в рейтинги","Region":"Регион","Optional. Adds you to your regional ranking":"По желанию. Добавляет в рейтинг региона",
-"First Star":"Первая звезда","Donate once":"Отправь донат","Founding Donor":"Основатель","One of the first 50":"Один из первых 50","Region #1":"Регион #1","Lead your region":"Возглавь свой регион","Country #1":"Страна #1","Lead your country":"Возглавь свою страну","World top 10":"Топ-10 мира","Reach the world top":"Попади в мировой топ","Connector":"Связной","Invite 3 friends":"Пригласи 3 друзей","Big Fish":"Крупная рыба","Donate 500 ⭐":"Отправь 500 ⭐","Rally":"Поход","Invite 10 friends":"Пригласи 10 друзей","Low profile":"Инкогнито","Hide your name":"Скрой своё имя",
+"First Star":"Первая звезда","Donate once":"Отправь донат","Founding Donor":"Основатель","One of the first 50":"Один из первых 50","Region #1":"Регион #1","Lead your region":"Возглавь свой регион","Country #1":"Страна #1","Lead your country":"Возглавь свою страну","World top 10":"Топ-10 мира","Reach the world top":"Попади в мировой топ","Connector":"Связной","Invite 3 friends":"Пригласи 3 друзей","Big Fish":"Крупная рыба","Donate 500 ★":"Отправь 500 ★","Rally":"Поход","Invite 10 friends":"Пригласи 10 друзей","Low profile":"Инкогнито","Hide your name":"Скрой своё имя",
 "Badges":"Значки","Earned from real activity. No donation needed for most of them.":"Выдаются за реальную активность. Для большинства донат не нужен.",
 "{me} is only {n} {u} behind {r} on the World Rich List! Join the race, it's free to look and pick a side.":"{me} отстаёт от {r} в World Rich List всего на {n} {u}! Присоединяйся: смотреть бесплатно, выбери сторону.","friends":"друзей",
 "Weekly battle":"Недельная битва","ends in {x}":"закончится через {x}","Open":"Свободно","Last week's winner:":"Победитель прошлой недели:","region":"регион","Last week: no winner yet. Be the first.":"Прошлая неделя: победителя нет. Будь первым.",
-"Live":"В эфире","{n} sent {a} ⭐ for {w}":"{n} отправил(а) {a} ⭐ за {w}","now":"сейчас",
+"Live":"В эфире","{n} sent {a} ★ for {w}":"{n} отправил(а) {a} ★ за {w}","now":"сейчас",
 "Places":"Места","People":"Люди","Me":"Я","Countries and regions, ranked":"Рейтинг стран и регионов","Who leads, near and far":"Кто лидирует рядом и далеко","Ranking by":"Рейтинг по","All time":"Всё время","Week":"Неделя","Period":"Период","Countries":"Страны","Level":"Уровень","Area":"Область",
 "Choose your country":"Выбери страну","Your Stars and friends count for it. It's locked after your first donation.":"Твои Stars и друзья засчитываются ей. После первого доната выбор блокируется.","Search countries":"Поиск стран","No country found.":"Страна не найдена.",
 "Choose your region":"Выбери регион","Appear in the {c} regional ranking. It's locked after your first donation.":"Появись в рейтинге регионов: {c}. После первого доната выбор блокируется.","Search regions":"Поиск регионов","No region found.":"Регион не найден.","Skip for now":"Пропустить",
-"Thank you!":"Спасибо!","{n} ⭐ added to {p}. The ranking updates in a moment.":"{n} ⭐ добавлено: {p}. Рейтинг скоро обновится.","Tell your friends":"Расскажи друзьям","Back to ranking":"Назад к рейтингу",
-"Donate for {p}":"Донат за {p}","Choose how many Stars to send.":"Выбери, сколько Stars отправить.","Other amount":"Другая сумма","Others see “Anonymous”":"Другие видят «Anonymous»","Opening payment…":"Открываю оплату…","Donate {n} ⭐":"Отправить {n} ⭐",
+"Thank you!":"Спасибо!","{n} ★ added to {p}. The ranking updates in a moment.":"{n} ★ добавлено: {p}. Рейтинг скоро обновится.","Tell your friends":"Расскажи друзьям","Back to ranking":"Назад к рейтингу",
+"Donate for {p}":"Донат за {p}","Choose how many Stars to send.":"Выбери, сколько Stars отправить.","Other amount":"Другая сумма","Others see “Anonymous”":"Другие видят «Anonymous»","Opening payment…":"Открываю оплату…","Donate {n} ★":"Отправить {n} ★",
 "Enter an amount from {a} to {b} Stars.":"Введи сумму от {a} до {b} Stars.","The payment didn't go through. Try again.":"Платёж не прошёл. Попробуй ещё раз.","Link copied":"Ссылка скопирована",
 "Open this app from Telegram":"Открой приложение из Telegram","Find @WorldRichListBot and tap “Open App”.":"Найди @WorldRichListBot и нажми «Open App».","Couldn't load":"Не удалось загрузить",
-"Donations are non-refundable.":"Донаты не возвращаются.","Notifications":"Уведомления","Rank changes and weekly winners":"Смена мест и победители недели","Try 1 ⭐":"Попробовать 1 ⭐","A tiny first step. It still counts.":"Маленький первый шаг. Он тоже засчитывается.",
+"Donations are non-refundable.":"Донаты не возвращаются.","Notifications":"Уведомления","Rank changes and weekly winners":"Смена мест и победители недели","Try 1 ★":"Попробовать 1 ★","A tiny first step. It still counts.":"Маленький первый шаг. Он тоже засчитывается.",
 "Welcome":"Добро пожаловать","Pick your side":"Выбери сторону","Choose your country. Your Stars and friends will push it up the ranking.":"Выбери страну. Твои Stars и друзья поднимут её в рейтинге.","Invite and share":"Приглашай и делись","Friends who join and pick a country raise your place. No donation needed.":"Друзья, которые присоединились и выбрали страну, поднимают твоё место. Донат не нужен.","Win your corner":"Выиграй свой уголок","You may not top the world, but you can lead your country or region.":"Может, ты не возглавишь мир, но можешь возглавить свою страну или регион.","Next":"Далее","Let's go":"Поехали",
 "Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.":"Stars получает владелец бота. Они дают тебе место и значок, больше ничего. Донаты не возвращаются."
 }};
@@ -381,7 +385,7 @@ function t(key, vars) {
   if (vars) for (const k in vars) out = out.split("{" + k + "}").join(vars[k]);
   return out;
 }
-const gapText = (n, x) => S.metric === "stars" ? t("{n} ⭐ more to pass {x}", { n: fmt(n), x }) : t("{n} more friends to pass {x}", { n: fmt(n), x });
+const gapText = (n, x) => S.metric === "stars" ? t("{n} ★ more to pass {x}", { n: fmt(n), x }) : t("{n} more friends to pass {x}", { n: fmt(n), x });
 const langHTML = () => `<div class="seg lang" role="group" aria-label="Language">${LANGS.map(([c, l]) => `<button data-act="lang" data-v="${c}" aria-pressed="${LANG === c}">${l}</button>`).join("")}</div>`;
 function setLang(l) {
   LANG = l; try { localStorage.setItem("wrl_lang", l); } catch (_) {}
@@ -423,7 +427,7 @@ async function loadBoard() {
 async function refreshAll() {
   try {
     const before = S.me && S.me.pos, b = await api("/api/bootstrap"); S.me = b.me;
-    if (before && b.me.pos && b.me.pos < before) { toast(`#${before} → #${b.me.pos} 🎉`); confetti(); }
+    if (before && b.me.pos && b.me.pos < before) { toast(`#${before} → #${b.me.pos}`); confetti(); }
     if (S.tab !== "me") await loadBoard(); else render();
   } catch (e) { toast(e.message); }
 }
@@ -449,8 +453,8 @@ function podiumHTML(items) {
 const ctaStrip = (title, text, act, label) =>
   `<div class="strip cta"><div style="flex:1"><div class="t">${title}</div><div class="d">${text}</div></div><button class="btn gold" style="flex:none;min-height:40px" data-act="${act}">${label}</button></div>`;
 const shareText = () => S.me.region
-  ? `Help ${rname(S.me.region)} climb the ranking! ⭐`
-  : (S.me.country ? `Help ${cname(S.me.country)} reach #1 on the Country Ranking! ⭐` : "Which country is the richest in Telegram Stars?");
+  ? `Help ${rname(S.me.region)} climb the ranking! ★`
+  : (S.me.country ? `Help ${cname(S.me.country)} reach #1 on the Country Ranking! ★` : "Which country is the richest in Telegram Stars?");
 const SKEL = `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
 
 
@@ -469,40 +473,40 @@ function battleHTML() {
   const p = S.pulse; if (!p) return "";
   const b = p.battle, slots = [0, 1, 2].map((i) => b.now[i]);
   const cell = (r, i) => r
-    ? `<div>${placeFlag(r.key)}<div class="n">${["🥇","🥈","🥉"][i]} ${esc(placeLabel(r.key))}</div><div class="v">${fmt(r.value)} ⭐</div></div>`
+    ? `<div>${placeFlag(r.key)}<div class="n">${["I","II","III"][i]} ${esc(placeLabel(r.key))}</div><div class="v">${fmt(r.value)} ★</div></div>`
     : `<div><div class="flag-slot" style="width:30px;height:20px;border:2px dashed var(--line);border-radius:4px;margin:0 auto"></div><div class="n" style="color:var(--mist)">${t("Open")}</div><div class="v">&nbsp;</div></div>`;
   const last = b.last[0]
     ? `${t("Last week's winner:")} <b>${placeFlag(b.last[0].key)} ${esc(placeLabel(b.last[0].key))}</b>${b.last_regions[0] ? ` · ${t("region")} <b>${esc(rname(b.last_regions[0].key))}</b>` : ""}`
     : t("Last week: no winner yet. Be the first.");
-  return `<div class="battle"><div class="top"><h2>⚔️ ${t("Weekly battle")}</h2><span class="timer">${t("ends in {x}", { x: left(b.resets_in) })}</span></div>
+  return `<div class="battle"><div class="top"><h2>✦ ${t("Weekly battle")}</h2><span class="timer">${t("ends in {x}", { x: left(b.resets_in) })}</span></div>
     <div class="mini">${slots.map(cell).join("")}</div><div class="last">${last}</div></div>`;
 }
 function feedHTML() {
   const p = S.pulse; if (!p || !p.feed.length) return "";
   return `<div class="live"><h2><span class="dot"></span>${t("Live")}</h2>${p.feed.map((e) => {
     const where = e.region ? rname(e.region) : (e.code ? cname(e.code) : "");
-    return `<div class="ev">${e.code ? flag(e.code) : ""}<div>${t("{n} sent {a} ⭐ for {w}", { n: "<b>" + esc(e.name) + (e.is_me ? " (" + t("you") + ")" : "") + "</b>", a: fmt(e.amount), w: esc(where || "…") })}</div><span class="t">${ago(e.ago)}</span></div>`;
+    return `<div class="ev">${e.code ? flag(e.code) : ""}<div>${t("{n} sent {a} ★ for {w}", { n: "<b>" + esc(e.name) + (e.is_me ? " (" + t("you") + ")" : "") + "</b>", a: fmt(e.amount), w: esc(where || "…") })}</div><span class="t">${ago(e.ago)}</span></div>`;
   }).join("")}</div>`;
 }
 function badgesHTML() {
   const m = S.me, rk = m.ranks || {}, top = (r, n) => !!(r && r.pos <= n);
   const list = [
-    ["⭐", t("First Star"), t("Donate once"), m.total > 0],
-    ["🏅", t("Founding Donor"), t("One of the first 50"), !!(m.donor_no && m.donor_no <= 50)],
-    ["📍", t("Region #1"), t("Lead your region"), top(rk.stars_region, 1) || top(rk.friends_region, 1)],
-    ["🚩", t("Country #1"), t("Lead your country"), top(rk.stars_country, 1) || top(rk.friends_country, 1)],
-    ["🌍", t("World top 10"), t("Reach the world top"), top(rk.stars_world, 10) || top(rk.friends_world, 10)],
-    ["🤝", t("Connector"), t("Invite 3 friends"), m.invited >= 3],
-    ["🐋", t("Big Fish"), t("Donate 500 ⭐"), m.total >= 500],
-    ["🔥", t("Rally"), t("Invite 10 friends"), m.invited >= 10],
-    ["🕶", t("Low profile"), t("Hide your name"), !!m.anon],
+    ["★", t("First Star"), t("Donate once"), m.total > 0],
+    ["❖", t("Founding Donor"), t("One of the first 50"), !!(m.donor_no && m.donor_no <= 50)],
+    ["◎", t("Region #1"), t("Lead your region"), top(rk.stars_region, 1) || top(rk.friends_region, 1)],
+    ["♛", t("Country #1"), t("Lead your country"), top(rk.stars_country, 1) || top(rk.friends_country, 1)],
+    ["✪", t("World top 10"), t("Reach the world top"), top(rk.stars_world, 10) || top(rk.friends_world, 10)],
+    ["∞", t("Connector"), t("Invite 3 friends"), m.invited >= 3],
+    ["◈", t("Big Fish"), t("Donate 500 ★"), m.total >= 500],
+    ["♔", t("Rally"), t("Invite 10 friends"), m.invited >= 10],
+    ["◐", t("Low profile"), t("Hide your name"), !!m.anon],
   ];
   const got = list.filter((b) => b[3]).length;
   return `<div class="card"><h2>${t("Badges")} · ${got}/${list.length}</h2><p>${t("Earned from real activity. No donation needed for most of them.")}</p>
     <div class="badges">${list.map(([i, n, d, on]) => `<div class="badge ${on ? "on" : "off"}"><i>${i}</i><span>${n}</span><small>${d}</small></div>`).join("")}</div></div>`;
 }
 function challengeText(rival, gap, myName) {
-  return t("{me} is only {n} {u} behind {r} on the World Rich List! Join the race, it's free to look and pick a side.", { me: myName, n: fmt(gap), u: S.metric === "stars" ? "⭐" : t("friends"), r: rival });
+  return t("{me} is only {n} {u} behind {r} on the World Rich List! Join the race, it's free to look and pick a side.", { me: myName, n: fmt(gap), u: S.metric === "stars" ? "★" : t("friends"), r: rival });
 }
 
 /* ---------------- Places tab ---------------- */
@@ -533,13 +537,13 @@ function placesHTML() {
       line = above ? gapText(above.value - mine.value + 1, esc(above.name)) : t("Keep going to climb.");
     }
     const above2 = mine && mine.pos > 1 ? items[mine.pos - 2] : null;
-    const ch = above2 ? `<button class="challenge" data-act="challenge" data-text="${esc(challengeText(above2.name, above2.value - mine.value + 1, nm))}">⚔️ ${t("Challenge friends to pass {x}", { x: esc(above2.name) })}</button>` : `<button class="challenge" data-act="challenge" data-text="${esc(t("{x} leads the World Rich List! Come and join the race.", { x: nm }))}">📣 ${t("Share {x}'s lead", { x: esc(nm) })}</button>`;
+    const ch = above2 ? `<button class="challenge" data-act="challenge" data-text="${esc(challengeText(above2.name, above2.value - mine.value + 1, nm))}">${t("Challenge friends to pass {x}", { x: esc(above2.name) })}</button>` : `<button class="challenge" data-act="challenge" data-text="${esc(t("{x} leads the World Rich List! Come and join the race.", { x: nm }))}">${t("Share {x}'s lead", { x: esc(nm) })}</button>`;
     strip = `<div class="strip" style="flex-wrap:wrap">${flag(cc)}<div><div class="t">${esc(nm)} · ${mine ? `#${mine.pos} · ${val(mine.value)}` : t("Not ranked yet")}</div><div class="d">${line}</div></div>${ch}</div>`;
-    if (!mine) strip = strip.replace(/<button class="challenge"[\s\S]*?<\/button>/, `<button class="challenge" data-act="challenge" data-text="${esc(t("Help {x} get on the World Rich List!", { x: nm }))}">📣 ${t("Invite friends for {x}", { x: esc(nm) })}</button>`);
+    if (!mine) strip = strip.replace(/<button class="challenge"[\s\S]*?<\/button>/, `<button class="challenge" data-act="challenge" data-text="${esc(t("Help {x} get on the World Rich List!", { x: nm }))}">${t("Invite friends for {x}", { x: esc(nm) })}</button>`);
   }
   let html = (b.scope === "countries" && S.period === "all" ? battleHTML() : "") + podiumHTML(items) + strip;
   const sample = !regions && S.metric === "stars" && S.period === "all" && S.cfg.sample.show && lead < S.cfg.sample.stars
-    ? `<div class="row sample"><div class="pos">🎯</div><div class="avatar" style="background:var(--panel2)">🤖</div><div><div class="name">${t("Demo country")}<span class="tag">${t("sample")}</span></div><div class="meta">${t("Not a real country. Beat it to take #1.")}</div></div><div class="stars">${fmt(S.cfg.sample.stars)} ⭐</div></div>` : "";
+    ? `<div class="row sample"><div class="pos">◇</div><div class="avatar">◇</div><div><div class="name">${t("Demo country")}<span class="tag">${t("sample")}</span></div><div class="meta">${t("Not a real country. Beat it to take #1.")}</div></div><div class="stars">${fmt(S.cfg.sample.stars)} ★</div></div>` : "";
   if (!items.length) {
     html += `<div class="list">${sample}</div><div class="empty"><b>${S.metric === "stars" ? t("No Stars donated yet") : t("No friends invited yet")}</b>${S.metric === "stars" ? t("Be the first. Donate for your place.") : t("Share your link. Friends who pick a country count.")}</div>`;
   } else {
@@ -599,17 +603,17 @@ function meHTML() {
     [m.country ? esc(cname(m.country)) : t("My country"), "country", !!m.country, m.country ? "" : t("Pick a country")],
     [m.region ? esc(rname(m.region)) : t("My region"), "region", reg && !!m.region, reg && !m.region ? t("Pick a region") : ""],
   ];
-  const matrix = `<table class="ranks"><tr><th></th><th>⭐ ${t("Stars")}</th><th>👥 ${t("Friends")}</th></tr>${rows.map(([label, scope, on, hint]) =>
+  const matrix = `<table class="ranks"><tr><th></th><th>${t("Stars")}</th><th>${t("Friends")}</th></tr>${rows.map(([label, scope, on, hint]) =>
     `<tr><td class="lab">${label}${hint ? `<small>${hint}</small>` : ""}</td><td>${rankCell("stars", scope, rk["stars_" + scope], on)}</td><td>${rankCell("friends", scope, rk["friends_" + scope], on)}</td></tr>`).join("")}</table>`;
   const canCountry = !m.locked;
   const canRegion = reg && (!m.locked || !m.region);
   const locRow = (label, small, html, act, btn) =>
     `<div class="setting"><div>${label}<small>${small}</small></div><div class="loc">${html}${act ? `<button class="btn ${btn === t("Choose") ? "gold" : ""}" style="flex:none;min-height:40px" data-act="${act}">${btn}</button>` : ""}</div></div>`;
   const countryLine = m.country
-    ? locRow(t("Country"), m.locked ? t("Locked after your first donation") : t("You can change it until you donate"), `${flag(m.country)}<b>${esc(cname(m.country))}</b>${m.locked ? "🔒" : ""}`, canCountry ? "change-country" : "", t("Change"))
+    ? locRow(t("Country"), m.locked ? t("Locked after your first donation") : t("You can change it until you donate"), `${flag(m.country)}<b>${esc(cname(m.country))}</b>`, canCountry ? "change-country" : "", t("Change"))
     : locRow(t("Country"), t("Choose it to join the rankings"), "", "open-donate", t("Choose"));
   const regionLine = reg
-    ? locRow(t("Region"), m.region ? (m.locked ? t("Locked after your first donation") : t("You can change it until you donate")) : t("Optional. Adds you to your regional ranking"), m.region ? `<b>${esc(rname(m.region))}</b>${m.locked ? "🔒" : ""}` : "", canRegion ? "set-region" : "", m.region ? t("Change") : t("Choose"))
+    ? locRow(t("Region"), m.region ? (m.locked ? t("Locked after your first donation") : t("You can change it until you donate")) : t("Optional. Adds you to your regional ranking"), m.region ? `<b>${esc(rname(m.region))}</b>` : "", canRegion ? "set-region" : "", m.region ? t("Change") : t("Choose"))
     : "";
   return `
   <div class="card">
@@ -654,7 +658,7 @@ function headerHTML() {
   const title = places ? t("Places") : t("People");
   const sub = places ? t("Countries and regions, ranked") : t("Who leads, near and far");
   let html = `<header><div><h1>${title}</h1><div class="sub">${sub}</div></div>${langHTML()}</header>`;
-  html += `<div class="tools">${seg("metric", S.metric, [["stars", "⭐ " + t("Stars")], ["friends", "👥 " + t("Friends")]], t("Ranking by"))}${seg("period", S.period, [["all", t("All time")], ["week", t("Week")]], t("Period"))}</div>`;
+  html += `<div class="tools">${seg("metric", S.metric, [["stars", t("Stars")], ["friends", t("Friends")]], t("Ranking by"))}${seg("period", S.period, [["all", t("All time")], ["week", t("Week")]], t("Period"))}</div>`;
   if (places) {
     if (reg) html += `<div class="tools scope">${seg("level", S.level, [["countries", t("Countries")], ["regions", esc(cname(cc))]], t("Level"))}</div>`;
   } else {
@@ -702,22 +706,22 @@ function renderSheet() {
       <div class="picklist">${list.length ? list.map((r) => `<button class="pick" data-act="pick-region" data-key="${esc(r.key)}">${flag(S.me.country)} ${esc(r.name)}</button>`).join("") : `<div class="empty">${t("No region found.")}</div>`}</div>
       ${S.me.region ? "" : `<button class="btn" style="width:100%;margin-top:10px" data-act="skip-region">${t("Skip for now")}</button>`}`;
   } else if (sh.step === "intro") {
-    const sl = [["🌍", "Pick your side", "Choose your country. Your Stars and friends will push it up the ranking."], ["🤝", "Invite and share", "Friends who join and pick a country raise your place. No donation needed."], ["🏆", "Win your corner", "You may not top the world, but you can lead your country or region."]];
+    const sl = [["✦", "Pick your side", "Choose your country. Your Stars and friends will push it up the ranking."], ["◈", "Invite and share", "Friends who join and pick a country raise your place. No donation needed."], ["♛", "Win your corner", "You may not top the world, but you can lead your country or region."]];
     const i = S.introSlide, [em, h, p] = sl[i], last = i === sl.length - 1;
     html += `<div class="intro"><div class="big">${em}</div><h2 id="sheetTitle">${t(h)}</h2><div class="lead">${t(p)}</div>${last ? `<div class="trust">${t("Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.")}</div>` : ""}
       <div class="dots">${sl.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
       <button class="btn gold" style="width:100%;min-height:52px" data-act="intro-next">${last ? t("Let's go") : t("Next")}</button></div>`;
   } else if (sh.step === "done") {
-    html += `<div class="done"><div class="big">🎉</div><h2 id="sheetTitle">${t("Thank you!")}</h2><div class="lead">${t("{n} ⭐ added to {p}. The ranking updates in a moment.", { n: fmt(sh.paid), p: flag(S.me.country) + " " + esc(place) })}</div><button class="btn gold" style="width:100%" data-act="challenge" data-text="${esc(t("{x} leads the World Rich List! Come and join the race.", { x: place }))}">📣 ${t("Tell your friends")}</button><button class="btn" style="width:100%;margin-top:8px" data-act="close-sheet">${t("Back to ranking")}</button></div>`;
+    html += `<div class="done"><div class="big">✦</div><h2 id="sheetTitle">${t("Thank you!")}</h2><div class="lead">${t("{n} ★ added to {p}. The ranking updates in a moment.", { n: fmt(sh.paid), p: flag(S.me.country) + " " + esc(place) })}</div><button class="btn gold" style="width:100%" data-act="challenge" data-text="${esc(t("{x} leads the World Rich List! Come and join the race.", { x: place }))}">${t("Tell your friends")}</button><button class="btn" style="width:100%;margin-top:8px" data-act="close-sheet">${t("Back to ranking")}</button></div>`;
   } else {
     const preset = S.cfg.presets.includes(sh.amount) && !sh.custom;
     html += `<h2 id="sheetTitle">${t("Donate for {p}", { p: flag(S.me.country) + " " + esc(place) })}</h2><div class="lead">${t("Choose how many Stars to send.")}</div>
-      ${S.cfg.min <= 1 ? `<button class="trial" data-act="amount" data-v="1" aria-pressed="${sh.amount === 1 && !sh.custom}">⭐<span>${t("Try 1 ⭐")}<small>${t("A tiny first step. It still counts.")}</small></span></button>` : ""}
-      <div class="amounts">${S.cfg.presets.map((a) => `<button data-act="amount" data-v="${a}" aria-pressed="${preset && sh.amount === a}">${fmt(a)} ⭐</button>`).join("")}</div>
+      ${S.cfg.min <= 1 ? `<button class="trial" data-act="amount" data-v="1" aria-pressed="${sh.amount === 1 && !sh.custom}">★<span>${t("Try 1 ★")}<small>${t("A tiny first step. It still counts.")}</small></span></button>` : ""}
+      <div class="amounts">${S.cfg.presets.map((a) => `<button data-act="amount" data-v="${a}" aria-pressed="${preset && sh.amount === a}">${fmt(a)} ★</button>`).join("")}</div>
       <div class="custom"><input class="search" id="customAmount" inputmode="numeric" pattern="[0-9]*" placeholder="${t("Other amount")} (${S.cfg.min}–${fmt(S.cfg.max)})" value="${esc(sh.custom)}" aria-label="Custom amount"></div>
       <div class="setting"><div>${t("Hide my name")}<small>${t("Others see “Anonymous”")}</small></div><button class="switch" role="switch" aria-checked="${S.me.anon}" aria-label="Hide my name" data-act="anon"></button></div>
       <div class="lead" style="font-size:12px;margin:4px 0 8px">${t("Donations are non-refundable.")}</div><div class="err" id="sheetErr">${esc(sh.error)}</div>
-      <button class="btn gold" style="width:100%;min-height:54px;font-size:16px" data-act="pay" ${sh.busy ? "disabled" : ""}>${sh.busy ? t("Opening payment…") : t("Donate {n} ⭐", { n: fmt(effectiveAmount()) })}</button>`;
+      <button class="btn gold" style="width:100%;min-height:54px;font-size:16px" data-act="pay" ${sh.busy ? "disabled" : ""}>${sh.busy ? t("Opening payment…") : t("Donate {n} ★", { n: fmt(effectiveAmount()) })}</button>`;
   }
   el.innerHTML = html;
   if (keepSearch) { const i = $("#countrySearch"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
@@ -765,7 +769,7 @@ async function pay() {
 
 function confetti() {
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const colors = ["#FFC53D", "#62E0B4", "#FF6B8A", "#9AA0D6", "#F2F0FF"];
+  const colors = ["#F6E3A6", "#D9B76A", "#A67C2E", "#F3EBDA"];
   for (let i = 0; i < 46; i++) {
     const d = document.createElement("i"); d.className = "confetti";
     d.style.left = Math.random() * 100 + "vw"; d.style.background = colors[i % colors.length];
@@ -843,7 +847,7 @@ document.addEventListener("input", (e) => {
   if (e.target.id === "countrySearch") { S.sheet.search = e.target.value; renderSheet(); }
   if (e.target.id === "customAmount") {
     S.sheet.custom = e.target.value.replace(/\D/g, "").slice(0, 5); e.target.value = S.sheet.custom; S.sheet.error = "";
-    const btn = document.querySelector('[data-act="pay"]'); if (btn) btn.textContent = t("Donate {n} ⭐", { n: fmt(effectiveAmount() || 0) });
+    const btn = document.querySelector('[data-act="pay"]'); if (btn) btn.textContent = t("Donate {n} ★", { n: fmt(effectiveAmount() || 0) });
     document.querySelectorAll(".amounts button").forEach((b) => b.setAttribute("aria-pressed", "false"));
   }
 });
@@ -853,7 +857,7 @@ const DEMO_STATE = { region: "UZ-SAMARKAND", country: "UZ" };
 function demoApi(path, opts) {
   const names = { UZ:"Uzbekistan", KZ:"Kazakhstan", TR:"Türkiye", KG:"Kyrgyzstan", RU:"Russia", US:"United States", DE:"Germany", IN:"India", BR:"Brazil", JP:"Japan", TJ:"Tajikistan", AZ:"Azerbaijan" };
   const regs = { UZ: [["UZ-ANDIJAN","Andijan"],["UZ-BUKHARA","Bukhara"],["UZ-FERGANA","Fergana"],["UZ-SAMARKAND","Samarkand"],["UZ-TASHKENT-CITY","Tashkent City"]] };
-  const me = () => ({ name: "Demo User", title: "🐬 Dolphin", total: 120, locked: true, donor_no: 7, anon: false, country: DEMO_STATE.country, region: DEMO_STATE.region, pos: 14, week_stars: 60, week_pos: 3, invited: 2,
+  const me = () => ({ name: "Demo User", title: "◈ Dolphin", total: 120, locked: true, donor_no: 7, anon: false, country: DEMO_STATE.country, region: DEMO_STATE.region, pos: 14, week_stars: 60, week_pos: 3, invited: 2,
     ranks: { country: "UZ", region: "UZ-SAMARKAND", stars_world: { pos: 14, value: 120 }, stars_country: { pos: 3, value: 120 }, stars_region: { pos: 1, value: 120 }, friends_world: null, friends_country: { pos: 2, value: 2 }, friends_region: { pos: 1, value: 2 } },
     link: "https://t.me/WorldRichListBot?start=ref_1" });
   if (path.startsWith("/api/bootstrap")) return Promise.resolve({ me: me(), countries: Object.entries(names).map(([code, name]) => ({ code, name })), regions: Object.fromEntries(Object.entries(regs).map(([c, l]) => [c, l.map(([key, name]) => ({ key, name }))])), config: { presets: [10, 50, 100, 500, 1000], min: 1, max: 10000, sample: { show: false, stars: 100 } } });
@@ -881,7 +885,7 @@ function demoApi(path, opts) {
 /* ---------------- boot ---------------- */
 async function boot() {
   LANG = detectLang(); document.documentElement.lang = LANG; applyStatic();
-  if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor("#12163A"); tg.setBackgroundColor("#12163A"); tg.setBottomBarColor && tg.setBottomBarColor("#12163A"); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (_) {} }
+  if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor("#0A0907"); tg.setBackgroundColor("#0A0907"); tg.setBottomBarColor && tg.setBottomBarColor("#0A0907"); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (_) {} }
   if (!INIT && !DEMO) {
     $("#app").innerHTML = `<div class="gate"><div><b>${t("Open this app from Telegram")}</b>${t("Find @WorldRichListBot and tap “Open App”.")}</div></div>`; return;
   }
