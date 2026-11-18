@@ -99,7 +99,7 @@ header .seg.lang{margin-top:2px}
 /* ---------- me ---------- */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
 .hello{display:flex;align-items:center;gap:12px}
-.hello .avatar{width:48px;height:48px;font-size:18px}
+.hello .avatar{width:48px;height:48px;font-size:20px;font-family:var(--display);background:linear-gradient(145deg,#2A2216,#14110D)!important;border-color:rgba(217,183,106,.6)}
 .hello .t{font-family:var(--display);font-weight:500;font-size:21px;line-height:1.2}
 .hello .d{color:var(--mist);font-size:13px;margin-top:2px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
@@ -119,7 +119,7 @@ h2{font-family:var(--display);font-weight:500;font-size:19px;margin-bottom:6px}
 .setting small{display:block;color:var(--mist);font-size:12.5px;font-weight:500;margin-top:1px}
 .switch{width:50px;height:30px;border-radius:15px;background:var(--line);position:relative;flex:none;transition:background .15s}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--chalk);transition:transform .15s}
-.switch[aria-checked="true"]{background:var(--you)}
+.switch[aria-checked="true"]{background:var(--gold)}
 .switch[aria-checked="true"]::after{transform:translateX(20px);background:var(--ink)}
 ol.how{list-style:none;counter-reset:s;margin-top:4px}
 ol.how li{counter-increment:s;display:flex;gap:12px;padding:8px 0;color:var(--chalk);font-size:14px}
@@ -180,10 +180,10 @@ ol.how li::before{content:counter(s);flex:none;width:24px;height:24px;border-rad
 .ranks td{padding:0}
 .ranks .lab{font-weight:600;font-size:14px;padding:12px 0}
 .ranks .lab small{display:block;color:var(--mist);font-size:11.5px;font-weight:500}
-.cell{display:block;width:100%;min-height:46px;border-radius:12px;background:var(--ink);font-family:var(--display);font-weight:700;font-size:15px}
+.cell{display:block;width:100%;min-height:46px;border-radius:12px;background:var(--ink);font-family:inherit;font-weight:800;font-size:15px;letter-spacing:.01em}
 .cell.none{color:var(--line);font-family:inherit;font-weight:600;font-size:12.5px;color:var(--mist)}
 .cell.top{background:var(--foil);color:var(--ink)}
-.cell.ok{color:var(--you)}
+.cell.ok{color:var(--gold)}
 .cell + .cell{margin-left:6px}
 .ranks td+td{padding-left:6px}
 .pin{display:inline-grid;place-items:center;width:30px;height:20px;font-size:15px}
@@ -287,7 +287,7 @@ document.addEventListener("error", (e) => {
 const hue = (s) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
 function avatar(name, anon) {
   const clean = String(name).replace(/^@/, "");
-  const ch = anon ? "◌" : (clean[0] || "?").toUpperCase();
+  const ch = anon ? "◌" : (Array.from(clean)[0] || "♛").toUpperCase();
   return `<div class="avatar" style="background:hsl(${30 + hue(clean) % 24} 28% 14%)">${esc(ch)}</div>`;
 }
 const haptic = (t) => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || "light"); } catch (_) {} };
@@ -444,7 +444,8 @@ function podiumHTML(items) {
   const order = [1, 0, 2];
   const cell = (i) => {
     const r = items[i], first = i === 0;
-    const h = r ? Math.max(44, Math.round(132 * (r.value / (lead || 1)))) : 44;
+    const minH = [96, 68, 52][i];
+    const h = r ? Math.max(minH, Math.round(132 * (r.value / (lead || 1)))) : minH;
     if (!r) return `<div class="pod open"><div class="flag-slot"></div><div class="who">${t("Open spot")}</div><div class="amt">&nbsp;</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
     return `<div class="pod ${first ? "first" : ""} ${r.mine ? "mine" : ""}">${r.big}<div class="who">${esc(r.name)}</div><div class="amt"><b>${fmt(r.value)}</b> ${unit()}</div><div class="bar" style="height:${h}px"><span class="num">${i + 1}</span></div></div>`;
   };
