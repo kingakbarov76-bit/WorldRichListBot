@@ -55,3 +55,8 @@ Mini App shu jarayonning o'zida xizmat qiladi: `/app` sahifa, `/api/*` — API (
 - Ikki o'lchov: ⭐ Stars va 👥 Friends (taklif qilingan do'st davlat tanlaganda hisoblanadi).
 - Viloyatlar faqat UZ, KZ, KG, TJ, TM, TR uchun (`regions.py`). Shaharlar yo'q: erkin matn spam va dublikat keltiradi.
 - Migratsiya: `migrations/002_regions_and_activation.sql` (Supabase'da qo'llangan).
+
+## Qo'shimchalar
+- Mini App tillari: EN / UZ / RU (Telegram tiliga qarab avtomatik).
+- `MINIAPP_LINK` (ixtiyoriy): BotFather `/newapp` dan keyingi havola, masalan `https://t.me/WorldRichListBot/app`. Qo'yilsa, referal havolalar to'g'ridan-to'g'ri Mini App'ni ochadi (`?startapp=ref_<id>`).
+- Dushanba (UTC) kuni g'olib davlat odamlariga bot xabar yuboradi. Migratsiya: `migrations/003_meta_and_notify.sql`.

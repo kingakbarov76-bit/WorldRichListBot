@@ -76,7 +76,7 @@ class Database:
             self._exec(
                 f"""
                 UPDATE {S}.users SET referrer_id = %s
-                WHERE user_id = %s AND referrer_id IS NULL
+                WHERE user_id = %s AND referrer_id IS NULL AND activated_at IS NULL
                   AND EXISTS (SELECT 1 FROM {S}.users WHERE user_id = %s)
                 """,
                 (referrer_id, user_id, referrer_id),
@@ -295,7 +295,7 @@ class Database:
         return self._all(
             f"""
             SELECT user_id, country_code FROM {S}.users
-            WHERE country_code = ANY(%s) AND total_stars > 0 AND user_id <> %s
+            WHERE country_code = ANY(%s) AND total_stars > 0 AND user_id <> %s AND notify
             ORDER BY total_stars DESC
             LIMIT %s
             """,
@@ -346,6 +346,43 @@ class Database:
                     {"pos": int(me["pos"]), "value": int(me["value"])} if me else None
                 )
         return out
+
+    # ------------------------------------------------------ notifications/meta
+    def get_notify(self, user_id: int) -> bool:
+        row = self._one(f"SELECT notify FROM {S}.users WHERE user_id = %s", (user_id,))
+        return bool(row["notify"]) if row else True
+
+    def toggle_notify(self, user_id: int) -> bool:
+        row = self._one(
+            f"UPDATE {S}.users SET notify = NOT notify WHERE user_id = %s RETURNING notify",
+            (user_id,),
+        )
+        return bool(row["notify"]) if row else True
+
+    def current_week_key(self) -> str:
+        row = self._one(
+            "SELECT to_char(date_trunc('week', now() AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS k"
+        )
+        return row["k"]
+
+    def get_meta(self, key: str) -> Optional[str]:
+        row = self._one(f"SELECT value FROM {S}.meta WHERE key = %s", (key,))
+        return row["value"] if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        self._exec(
+            f"INSERT INTO {S}.meta (key, value) VALUES (%s, %s) "
+            f"ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            (key, value),
+        )
+
+    def audience_of_country(self, code: str, limit: int) -> list[int]:
+        rows = self._all(
+            f"SELECT user_id FROM {S}.users WHERE country_code = %s AND notify "
+            f"ORDER BY total_stars DESC LIMIT %s",
+            (code, limit),
+        )
+        return [int(r["user_id"]) for r in rows]
 
     # ------------------------------------------------ weekly battle & feed
     def battle(self) -> dict[str, Any]:

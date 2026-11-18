@@ -65,7 +65,8 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
 
     async def me_for(user: dict[str, Any]) -> dict[str, Any]:
         return await asyncio.to_thread(
-            me_payload, db, user["id"], user["_full_name"], cfg["bot_username"]
+            me_payload, db, user["id"], user["_full_name"], cfg["bot_username"],
+            cfg.get("miniapp_link", ""),
         )
 
     # ------------------------------------------------------------------ pages
@@ -108,6 +109,19 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
     async def pulse(request: web.Request) -> web.Response:
         user = await authenticate(request)
         return web.json_response(await asyncio.to_thread(pulse_payload, db, user["id"]))
+
+    async def ref(request: web.Request) -> web.Response:
+        user = await authenticate(request)
+        body = await request.json()
+        raw = str(body.get("ref", ""))
+        if raw.startswith("ref_") and raw[4:].isdigit():
+            await asyncio.to_thread(db.set_referrer, user["id"], int(raw[4:]))
+        return web.json_response({"me": await me_for(user)})
+
+    async def toggle_notify(request: web.Request) -> web.Response:
+        user = await authenticate(request)
+        await asyncio.to_thread(db.toggle_notify, user["id"])
+        return web.json_response({"me": await me_for(user)})
 
     async def set_region(request: web.Request) -> web.Response:
         user = await authenticate(request)
@@ -167,6 +181,8 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
     app.router.add_get("/api/board", board)
     app.router.add_post("/api/country", set_country)
     app.router.add_get("/api/pulse", pulse)
+    app.router.add_post("/api/ref", ref)
+    app.router.add_post("/api/notify", toggle_notify)
     app.router.add_post("/api/region", set_region)
     app.router.add_post("/api/anon", toggle_anon)
     app.router.add_post("/api/invoice", invoice)

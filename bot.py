@@ -860,6 +860,7 @@ async def start_web_server(bot: Bot) -> Optional[Any]:
             "max_stars": MAX_STARS,
             "show_sample": SHOW_SAMPLE_ROW,
             "sample_stars": SAMPLE_STARS,
+            "miniapp_link": os.getenv("MINIAPP_LINK", "").strip().rstrip("/"),
         },
     )
     runner = web.AppRunner(app)
@@ -887,6 +888,39 @@ async def keepalive_loop() -> None:
             except Exception as exc:  # network hiccup: just try again later
                 log.warning("keepalive ping failed: %s", exc)
             await asyncio.sleep(600)
+
+
+async def weekly_winner_loop(bot: Bot) -> None:
+    """Every Monday (UTC) tell the winning country's people they won last week."""
+    await asyncio.sleep(45)
+    while True:
+        try:
+            week = await asyncio.to_thread(db.current_week_key)
+            if await asyncio.to_thread(db.get_meta, "weekly_announced") != week:
+                b = await asyncio.to_thread(db.battle)
+                await asyncio.to_thread(db.set_meta, "weekly_announced", week)
+                if b["last"]:
+                    win = b["last"][0]
+                    code = win["place"]
+                    text = (
+                        f"🏆 <b>{country_label(code)}</b> won last week's battle with "
+                        f"<b>{win['value']} ⭐</b>!\n\nA new week just started. "
+                        f"Defend the title and invite friends."
+                    )
+                    kb = None
+                    if WEBAPP_URL:
+                        kb = InlineKeyboardMarkup(inline_keyboard=[[
+                            InlineKeyboardButton(text="🚀 Open the app", web_app=WebAppInfo(url=WEBAPP_URL))
+                        ]])
+                    for uid in await asyncio.to_thread(db.audience_of_country, code, 500):
+                        try:
+                            await bot.send_message(uid, text, reply_markup=kb)
+                        except Exception:
+                            pass
+                        await asyncio.sleep(0.05)
+        except Exception:
+            log.exception("weekly winner loop failed")
+        await asyncio.sleep(1800)
 
 
 # ---------------------------------------------------------------------- main
@@ -921,10 +955,12 @@ async def main() -> None:
         except Exception:
             log.exception("Could not set the menu button")
     keepalive = asyncio.create_task(keepalive_loop())
+    weekly = asyncio.create_task(weekly_winner_loop(bot))
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         keepalive.cancel()
+        weekly.cancel()
         if web_runner is not None:
             await web_runner.cleanup()
         await bot.session.close()

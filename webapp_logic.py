@@ -35,7 +35,9 @@ def public_person(row: dict[str, Any], viewer_id: int) -> dict[str, Any]:
     }
 
 
-def me_payload(db: Any, user_id: int, full_name: str, bot_username: str) -> dict[str, Any]:
+def me_payload(
+    db: Any, user_id: int, full_name: str, bot_username: str, miniapp_link: str = ""
+) -> dict[str, Any]:
     s = db.user_stats(user_id)
     return {
         "name": full_name,
@@ -51,7 +53,9 @@ def me_payload(db: Any, user_id: int, full_name: str, bot_username: str) -> dict
         "week_pos": s["week_pos"],
         "invited": s["invited"],
         "ranks": db.ranks(user_id),
-        "link": f"https://t.me/{bot_username}?start=ref_{user_id}",
+        "notify": db.get_notify(user_id),
+        "link": (f"{miniapp_link}?startapp=ref_{user_id}" if miniapp_link
+                 else f"https://t.me/{bot_username}?start=ref_{user_id}"),
     }
 
 
