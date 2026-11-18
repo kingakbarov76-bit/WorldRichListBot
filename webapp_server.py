@@ -165,7 +165,7 @@ def create_app(bot: Any, db: Any, cfg: dict[str, Any]) -> web.Application:
             return _error(400, "Choose your country first.")
         link = await bot.create_invoice_link(
             title=f"Donate {amount} ⭐",
-            description=f"{amount} Telegram Stars for {COUNTRIES[country]} on the Global Leaderboard!",
+            description=f"{amount} Telegram Stars for {COUNTRIES[country]} on the Global Leaderboard! Non-refundable: it buys you a rank and badges.",
             payload=f"donate:{user['id']}:{amount}",
             currency="XTR",
             prices=[LabeledPrice(label=f"{amount} Stars", amount=amount)],

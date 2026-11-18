@@ -380,7 +380,8 @@ async def send_invoice(
         title=f"Donate {amount} ⭐",
         description=(
             f"{amount} Telegram Stars for {country_label(country)} on the "
-            f"Global Leaderboard!"
+            f"Global Leaderboard! Donations are non-refundable: they buy you a "
+            f"rank and badges."
         ),
         payload=f"donate:{user_id}:{amount}",
         currency="XTR",
@@ -510,9 +511,10 @@ async def cmd_app(message: Message) -> None:
 async def cmd_paysupport(message: Message) -> None:
     await message.answer(
         "💬 <b>Payment support</b>\n\n"
-        "If a payment didn't go through or was not credited, please describe the "
-        "problem and include the time of the payment. We'll review it as soon "
-        "as possible."
+        "Donations are non-refundable: they buy you a rank and badges.\n\n"
+        "The only exceptions are errors, for example a payment charged twice or "
+        "not credited. In that case describe the problem and include the time "
+        "of the payment. We'll review it as soon as possible."
     )
 
 

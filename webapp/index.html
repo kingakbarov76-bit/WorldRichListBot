@@ -328,9 +328,9 @@ uz: {
 "Donate for {p}":"{p} uchun donat","Choose how many Stars to send.":"Qancha Stars yuborishni tanla.","Other amount":"Boshqa summa","Others see “Anonymous”":"Boshqalar “Anonymous” ko'radi","Opening payment…":"To'lov ochilmoqda…","Donate {n} ⭐":"{n} ⭐ donat qilish",
 "Enter an amount from {a} to {b} Stars.":"{a} dan {b} gacha Stars kiriting.","The payment didn't go through. Try again.":"To'lov o'tmadi. Qayta urinib ko'ring.","Link copied":"Havola nusxalandi",
 "Open this app from Telegram":"Bu ilovani Telegram'dan oching","Find @WorldRichListBot and tap “Open App”.":"@WorldRichListBot'ni toping va “Open App” ni bosing.","Couldn't load":"Yuklanmadi",
-"Notifications":"Bildirishnomalar","Rank changes and weekly winners":"O'rin o'zgarishi va haftalik g'olib","Try 1 ⭐":"1 ⭐ sinab ko'r","A tiny first step. It still counts.":"Kichik birinchi qadam. U ham hisoblanadi.",
+"Donations are non-refundable.":"Donat qaytarilmaydi.","Notifications":"Bildirishnomalar","Rank changes and weekly winners":"O'rin o'zgarishi va haftalik g'olib","Try 1 ⭐":"1 ⭐ sinab ko'r","A tiny first step. It still counts.":"Kichik birinchi qadam. U ham hisoblanadi.",
 "Welcome":"Xush kelibsiz","Pick your side":"Tomoningni tanla","Choose your country. Your Stars and friends will push it up the ranking.":"Davlatingni tanla. Stars va do'stlaring uni reytingda ko'taradi.","Invite and share":"Taklif qil va ulash","Friends who join and pick a country raise your place. No donation needed.":"Qo'shilib davlat tanlagan do'stlar o'ringni ko'taradi. Donat shart emas.","Win your corner":"O'z hududingda yeng","You may not top the world, but you can lead your country or region.":"Dunyoda birinchi bo'lmasang ham, davlat yoki viloyatingda yetakchi bo'la olasan.","Next":"Keyingi","Let's go":"Boshladik",
-"Your Stars go to the bot owner. They buy you a place and a badge, nothing else.":"Stars bot egasiga tushadi. Ular senga o'rin va nishon beradi, boshqa hech narsa emas."
+"Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.":"Stars bot egasiga tushadi. Ular senga o'rin va nishon beradi, boshqa hech narsa emas. Donat qaytarilmaydi."
 },
 ru: {
 "Open spot":"Свободно","Pick your country":"Выбери страну","Your Stars and friends will count for it.":"Твои Stars и друзья будут засчитаны ей.","Choose":"Выбрать",
@@ -365,9 +365,9 @@ ru: {
 "Donate for {p}":"Донат за {p}","Choose how many Stars to send.":"Выбери, сколько Stars отправить.","Other amount":"Другая сумма","Others see “Anonymous”":"Другие видят «Anonymous»","Opening payment…":"Открываю оплату…","Donate {n} ⭐":"Отправить {n} ⭐",
 "Enter an amount from {a} to {b} Stars.":"Введи сумму от {a} до {b} Stars.","The payment didn't go through. Try again.":"Платёж не прошёл. Попробуй ещё раз.","Link copied":"Ссылка скопирована",
 "Open this app from Telegram":"Открой приложение из Telegram","Find @WorldRichListBot and tap “Open App”.":"Найди @WorldRichListBot и нажми «Open App».","Couldn't load":"Не удалось загрузить",
-"Notifications":"Уведомления","Rank changes and weekly winners":"Смена мест и победители недели","Try 1 ⭐":"Попробовать 1 ⭐","A tiny first step. It still counts.":"Маленький первый шаг. Он тоже засчитывается.",
+"Donations are non-refundable.":"Донаты не возвращаются.","Notifications":"Уведомления","Rank changes and weekly winners":"Смена мест и победители недели","Try 1 ⭐":"Попробовать 1 ⭐","A tiny first step. It still counts.":"Маленький первый шаг. Он тоже засчитывается.",
 "Welcome":"Добро пожаловать","Pick your side":"Выбери сторону","Choose your country. Your Stars and friends will push it up the ranking.":"Выбери страну. Твои Stars и друзья поднимут её в рейтинге.","Invite and share":"Приглашай и делись","Friends who join and pick a country raise your place. No donation needed.":"Друзья, которые присоединились и выбрали страну, поднимают твоё место. Донат не нужен.","Win your corner":"Выиграй свой уголок","You may not top the world, but you can lead your country or region.":"Может, ты не возглавишь мир, но можешь возглавить свою страну или регион.","Next":"Далее","Let's go":"Поехали",
-"Your Stars go to the bot owner. They buy you a place and a badge, nothing else.":"Stars получает владелец бота. Они дают тебе место и значок, больше ничего."
+"Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.":"Stars получает владелец бота. Они дают тебе место и значок, больше ничего. Донаты не возвращаются."
 }};
 const LANGS = [["en", "EN"], ["uz", "UZ"], ["ru", "RU"]];
 let LANG = "en";
@@ -704,7 +704,7 @@ function renderSheet() {
   } else if (sh.step === "intro") {
     const sl = [["🌍", "Pick your side", "Choose your country. Your Stars and friends will push it up the ranking."], ["🤝", "Invite and share", "Friends who join and pick a country raise your place. No donation needed."], ["🏆", "Win your corner", "You may not top the world, but you can lead your country or region."]];
     const i = S.introSlide, [em, h, p] = sl[i], last = i === sl.length - 1;
-    html += `<div class="intro"><div class="big">${em}</div><h2 id="sheetTitle">${t(h)}</h2><div class="lead">${t(p)}</div>${last ? `<div class="trust">${t("Your Stars go to the bot owner. They buy you a place and a badge, nothing else.")}</div>` : ""}
+    html += `<div class="intro"><div class="big">${em}</div><h2 id="sheetTitle">${t(h)}</h2><div class="lead">${t(p)}</div>${last ? `<div class="trust">${t("Your Stars go to the bot owner. They buy you a place and a badge, nothing else. Donations are non-refundable.")}</div>` : ""}
       <div class="dots">${sl.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
       <button class="btn gold" style="width:100%;min-height:52px" data-act="intro-next">${last ? t("Let's go") : t("Next")}</button></div>`;
   } else if (sh.step === "done") {
@@ -716,7 +716,7 @@ function renderSheet() {
       <div class="amounts">${S.cfg.presets.map((a) => `<button data-act="amount" data-v="${a}" aria-pressed="${preset && sh.amount === a}">${fmt(a)} ⭐</button>`).join("")}</div>
       <div class="custom"><input class="search" id="customAmount" inputmode="numeric" pattern="[0-9]*" placeholder="${t("Other amount")} (${S.cfg.min}–${fmt(S.cfg.max)})" value="${esc(sh.custom)}" aria-label="Custom amount"></div>
       <div class="setting"><div>${t("Hide my name")}<small>${t("Others see “Anonymous”")}</small></div><button class="switch" role="switch" aria-checked="${S.me.anon}" aria-label="Hide my name" data-act="anon"></button></div>
-      <div class="err" id="sheetErr">${esc(sh.error)}</div>
+      <div class="lead" style="font-size:12px;margin:4px 0 8px">${t("Donations are non-refundable.")}</div><div class="err" id="sheetErr">${esc(sh.error)}</div>
       <button class="btn gold" style="width:100%;min-height:54px;font-size:16px" data-act="pay" ${sh.busy ? "disabled" : ""}>${sh.busy ? t("Opening payment…") : t("Donate {n} ⭐", { n: fmt(effectiveAmount()) })}</button>`;
   }
   el.innerHTML = html;
